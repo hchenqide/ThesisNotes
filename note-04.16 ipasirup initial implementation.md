@@ -11,6 +11,13 @@
 
   `info.is_fixed` is only set at `FixedAssignmentListener::notify_fixed_assignment()`, which is not implemented
 
+(04.18)
+
+- guess: `notify_fixed_assignment()` is to notify the assigments that are actually of root level by chronological backtracking, so this doesn't go through `notify_assignment()` because the latter assignments are of current level
+  what about other senarios when the level of a literal need to change?
+
+- no, maybe not, it from `current_user_level`, which is a different thing, what is it? what does push/pop do?
+
 ### questions
 
 (minisat)
@@ -38,7 +45,7 @@
   }
   ```
   no, this wouldn't work yet because ~p is not yet propagated so there's no reason clause
-  it should be put after analyze before the next propagation, since it's not necessary anymore to propagate
+> it should be put after analyze before the next propagation, since it's not necessary anymore to propagate
   ```c++
   if (decisionLevel() < assumptions.size()) {
       analyzeFinal(learnt_clause[0], conflict);
@@ -50,7 +57,18 @@
     "--check-unsat-cores",
     "test/regress/cli/regress0/arrays/issue4546-2.smt2"
   the decision level is 4 before analysis while there's only one assumption, so in this case the new propagated literal will not be one in assumptions
-  so only when the conflict is found within assumptions can this be applyed
+> so only when the conflict is found within assumptions can this be applyed
+  ```c++
+  int conflict_level = decisionLevel();
+  if (conflict_level == 0) return l_False;
+  // analyze(...)
+  if (conflict_level <= assumptions.size()) {
+      assert(learnt_clause[0] == ~assumptions[conflict_level-1]);
+      analyzeFinal(learnt_clause[0], conflict);
+      return l_False;
+  }
+  ```
+
 > but if there's a conflict from a decision other than assumptions, it doesn't need to backtrack to a much earlier level and redo the assumptions again (this will require chronological backtracking)
 
 - assumptions may increase level bypassing user_propagator
@@ -75,3 +93,30 @@
 (04.17)
 > probably not, because a root level unit will still be marked as the current level non-chronically, unlike cadical
 (04.18)
+
+### others (04.18)
+
+(minisat)
+
+- exit early if an assumed literal causes conflict
+
+- move notify external propagator before assume and add assertions about notify index at new level
+
+- testing with fuzzer, found a bug with seed `153609370` where `clauses.front()` is directly called without checking `clauses.empty()` first which causes segmentation fault
+  it doesn't happen before this change of cmake where fsanitize is removed
+    add_compile_options(-fsanitize=address)
+    add_link_options(-fsanitize=address)
+  fixed and pushed
+
+### questions
+
+(minisat)
+
+- if there's a conflict at root level, analyzeFinal is not called?
+  at:
+    int conflict_level = decisionLevel();
+    if (conflict_level == 0) return l_False;
+  or:
+    if (decisionLevel() == 0 && !simplify())
+        return l_False;
+  and when user_propagator returns an unsat clause, should it be called?

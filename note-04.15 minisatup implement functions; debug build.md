@@ -49,9 +49,8 @@
   "program": "${workspaceFolder}/cvc5/build/bin/cvc5",
   "args": [
       "-i",
-      "--sat-solver=cadical",
-      "--debug-check-models",
-      "test/regress/cli/regress0/prop/cadical_bug1.smt2"
+      "--check-unsat-cores",
+      "test/regress/cli/regress0/arrays/issue4546-2.smt2"
   ],
   "cwd": "${workspaceFolder}/cvc5",
 

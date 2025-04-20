@@ -11,13 +11,7 @@
 
 - `d_nextVarIdx`: incremental index for variables, starting from 1
 
-
 `MinisatUPPropagator` (also `CadicalPropagator`):
-
-[types]
-
-- `VarInfo`:
-  - `is_theory_atom`: 
 
 [properties]
 

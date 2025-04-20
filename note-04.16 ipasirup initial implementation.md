@@ -6,6 +6,15 @@
 
 - minisat add `intToVar()` to SolverTypes.h
 
+- debug cadical test:
+  "program": "${workspaceFolder}/cvc5/build/bin/cvc5",
+  "args": [
+      "-i",
+      "--sat-solver=cadical",
+      "--debug-check-models",
+      "test/regress/cli/regress0/prop/cadical_bug1.smt2",
+  ],
+
 - error:
   Fatal failure within void cvc5::internal::prop::MinisatUPPropagator::user_pop() at cvc5/src/prop/minisatup.cpp:795  `Assert(info.is_fixed);`
 

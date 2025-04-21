@@ -36,3 +36,39 @@
     next_var: 11
     notify_assignment_index: 3
     notify_backtrack: true ??
+
+- continue with the next tests, error: (test/regress/cli/regress1/sets/proj-issue668.smt2)
+    Fatal failure within void cvc5::internal::SharedTermsDatabase::addSharedTerm(cvc5::internal::TNode, cvc5::internal::TNode, cvc5::internal::theory::TheoryIdSet) at cvc5/src/theory/shared_terms_database.cpp:99   Check failure   theories != (*find).second
+  it's called from _solve - renotify_fixed
+
+(04.21)
+
+- searched cvc5 github about tracing and found on wiki:
+  `-vvv` flag is needed for verbosity
+  updated debug config with following arguments:
+    "-vvv",
+    "--err=./build/bin/cvc5.err",
+  updated command line:
+  cvc5$:
+  `./build/bin/cvc5 --vvv --err=./build/bin/cvc5.err --out=./build/bin/cvc5.out -i --sat-solver=cadical test/regress/cli/regress0/prop/cadical_bug5.smt2`
+  some traces are printed but not all
+  these printed traces are using `verbose(1) <<`, etc
+  checked config:
+  ./build/bin/cvc5 --show-config
+    debug code    : yes
+    statistics    : yes
+    tracing       : yes
+    muzzled       : no
+    assertions    : yes
+  and when I debug, the trace function won't be entered at all
+
+- `Trace()` is controlled by macro `CVC5_TRACING` in `cvc5/src/base/output.h`
+  `-DCVC5_TRACING` is in compile command
+  there is this tag check `cvc5::internal::TraceChannel.isOn(tag)`
+  `TraceChannel.on()` handled in options `enableTraceTag()`
+  with this option
+  `-t cadical::propagator`
+  updated command line:
+  cvc5$:
+  `./build/bin/cvc5 -t cadical::propagator --err=./build/bin/cvc5.err --out=./build/bin/cvc5.out -i --sat-solver=cadical test/regress/cli/regress0/prop/cadical_bug5.smt2`
+  now we have trace in cvc5.err

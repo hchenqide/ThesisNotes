@@ -101,6 +101,35 @@
 
 - minisatup clear `add_tmp` after solve
 
+- error:
+    Fatal failure within int cvc5::internal::prop::MinisatUPPropagator::next_propagation() at cvc5/src/prop/minisatup.cpp:951  Check failure  info.assignment == 0 || info.assignment == lit
+  so they are going to provide a false literal for propagation
+    lit: -14
+    d_var_info[14].assignment: 14
+
+- append the propagation to new clauses if it's false:
+  ```c++
+    int lit = toCadicalLit(next);
+    SatVariable var = next.getSatVariable();
+    auto& info = d_var_info[var];
+
+    Trace("cadical::propagator") << "propagate: " << next << " (current assignment: " << info.assignment << ")" << std::endl;
+
+    // MinisatUP: if next is already assigned, skip
+    if (info.assignment == lit) {
+      return next_propagation();
+    }
+    // MinisatUP: if next is assigned false, push it to the front of d_new_clauses and return 0
+    if (info.assignment == -lit) {
+      d_new_clauses.push_front(0);
+      d_new_clauses.push_front(lit);
+      return 0;
+    }
+  ```
+
+- but I realized it's not correct, because a propagation may not be a unit clause
+  so just remove the assertion and leave it to minisatup
+
 ### extra (04.21)
 
 > understanding conditions for multiple solver calls with propagator

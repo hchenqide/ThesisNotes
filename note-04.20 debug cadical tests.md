@@ -72,3 +72,52 @@
   cvc5$:
   `./build/bin/cvc5 -t cadical::propagator --err=./build/bin/cvc5.err --out=./build/bin/cvc5.out -i --sat-solver=cadical test/regress/cli/regress0/prop/cadical_bug5.smt2`
   now we have trace in cvc5.err
+
+- replace `MinisatUPSolver` with `MinisatSatSolver` in `SatSolverFactory` so we can compare traces between MinisatUP and CaDiCal, build and run:
+  cvc5$:
+  `./build/bin/cvc5 -t cadical::propagator --err=stdout -i --sat-solver=cadical test/regress/cli/regress0/prop/cadical_bug5.smt2 > ../notes/test_cadical_bug5_1_cadical.out`
+  `./build/bin/cvc5 -t cadical::propagator --err=stdout -i test/regress/cli/regress0/prop/cadical_bug5.smt2 > ../notes/test_cadical_bug5_1_minisatup.out`
+
+- modify cadical_bug5.smt2 and comment out the first check-sat to simplify the results
+  the simplified smt2 is too simple and result doesn't show anything
+
+- modify cadical_bug5.smt2 and comment out all set-info so it wouldn't abort
+  not too different as the original outputs
+
+- debug while checking output
+
+  addClause (0): 10 0
+  user push: 0 -> 1
+  ...
+  propagate: ~10
+
+  assignment 10 not notified ??
+
+  debug adding clause 10 0
+  add_tmp.sz = 3 ??
+  add_tmp has literals [8, 9, 10]
+
+  [8, 9] was added during `add_external_clause`, and `add_tmp` was not cleared
+
+- minisatup clear `add_tmp` after solve
+
+### extra (04.21)
+
+> understanding conditions for multiple solver calls with propagator
+
+(after `solve()` and before the next `solve()` call)
+
+[solver]
+- at decision level 0
+- `trail` contains level 0 assignments
+- new clauses added and watched
+- new assumptions added
+- `notify_assignment_index` pointing to the next position to notify on the trail, where there might be new assignments added with unit clauses
+- `notify_backtrack` is false
+
+[propagator]
+- at decision level 0
+- maintains level 0 assignments
+
+discovery:
+- after solve we don't need to backtrack propagator by ourselves, because `resetTrail()` will be called to reset propagator to level 0

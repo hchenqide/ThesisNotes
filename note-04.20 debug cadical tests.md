@@ -130,6 +130,35 @@
 - but I realized it's not correct, because a propagation may not be a unit clause
   so just remove the assertion and leave it to minisatup
 
+(04.22)
+
+> propagate returning literal which is already false
+
+- in cvc5, get the reason clause and add to the front of clause list
+  ```c++
+  // MinisatUP: if next is assigned false, get the reason clause, add it to the front of d_new_clauses, and return 0
+  if (info.assignment == -lit) {
+    SatClause clause;
+    d_proxy->explainPropagation(lit, clause);
+    d_new_clauses.push_front(0);
+    for (const SatLiteral& lit : clause) {
+      d_new_clauses.push_front(toCadicalLit(lit));
+    }
+    return 0;
+  }
+  ```
+
+- Fatal failure within cvc5::internal::TNode cvc5::internal::prop::CnfStream::getNode(const cvc5::internal::prop::SatLiteral&) at /cvc5/src/prop/cnf_stream.cpp:222  Check failure  d_literalToNodeMap.find(literal) != d_literalToNodeMap.end()
+  `d_proxy->explainPropagation()` should take cvc5 literal, not cadical literal
+> suggestion: cvc5 forbid implicit conversion from int to cvc5 literal
+
+- next error: (test/regress/cli/regress1/sets/proj-issue668.smt2)
+  still the same one from `renotify_fixed`
+  need to understand theory preregister
+
+- `notify_backtrack` also goes to theory preregister, maybe it's still because the missing `notify_backtrack` after solve
+  no, there's still the error
+
 ### extra (04.21)
 
 > understanding conditions for multiple solver calls with propagator

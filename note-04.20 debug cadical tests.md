@@ -159,6 +159,15 @@
 - `notify_backtrack` also goes to theory preregister, maybe it's still because the missing `notify_backtrack` after solve
   no, there's still the error
 
+(04.23)
+
+- I realized, there might be backtracks with external clauses but will this break assumptions?
+
+- if a fixed variable is a unit at decision level 0, then it must also be added at user level 0, because otherwise it will be dependent on activation literals and wouldn't be a root level unit
+  add the following assertion to notify_fixed in CadicalSolver
+    Assert(info.level_intro == 0);
+  test with cadical
+
 ### extra (04.21)
 
 > understanding conditions for multiple solver calls with propagator

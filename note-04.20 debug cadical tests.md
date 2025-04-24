@@ -157,9 +157,12 @@
   need to understand theory preregister
 
 - `notify_backtrack` also goes to theory preregister, maybe it's still because the missing `notify_backtrack` after solve
-  no, there's still the error
+  in minisat solver add `notify_backtrack` immediately after solve
+  there's still the error
 
 (04.23)
+
+- trying to understand cvc5 theory preregister
 
 - I realized, there might be backtracks with external clauses but will this break assumptions?
 
@@ -167,6 +170,19 @@
   add the following assertion to notify_fixed in CadicalSolver
     Assert(info.level_intro == 0);
   test with cadical
+
+(04.24)
+
+- tested with cadical, now test with minisatup, no error
+  tried with previous commits, turned out to be that in sat_solver_factory when MinisatUPSolver is replacing CacicalSolver then there's the error, but when replacing MinisatSatSolver there's no error
+  so it's connected with the flags related with the option `--sat-solver=cadical`
+  but `renotify_fixed` is not called this time?
+
+### todo (04.24)
+
+- understanding the options related with `--sat-solver=cadical`
+- add option `--sat-solver=minisatup`
+- run full `make check`
 
 ### extra (04.21)
 

@@ -56,3 +56,4 @@
 
 discoveries:
 - there are also units added at user level 0 but only got notified at user level 1 in cadical
+- even in cadical all fixed assignments are at level 0, there's no out-of-order fixed assignments (assertions not added)

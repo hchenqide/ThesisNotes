@@ -178,11 +178,19 @@
   so it's connected with the flags related with the option `--sat-solver=cadical`
   but `renotify_fixed` is not called this time?
 
+- replace both with MinisatSatSolver and CadicalSolver with MinisatUPSolver
+  now no matter with `--sat-solver=cadical` or not, there will be the same error as above
+  run `make check`, there are a lot of errors
+
 ### todo (04.24)
 
 - understanding the options related with `--sat-solver=cadical`
 - add option `--sat-solver=minisatup`
 - run full `make check`
+- run `make check` with cadical as minisat
+
+- implement set resource limit
+- implement lazily adding unit clause (test/regress/cli/regress1/strings/issue6101.smt2)
 
 ### extra (04.21)
 

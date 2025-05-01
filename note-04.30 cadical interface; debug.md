@@ -48,3 +48,11 @@
     with clause at the beginning: `addClause (0): 84 ~45 ~5 0`, and 5 is assumed before 84
   so in the learned clause, the propagation literal might not be the decision literal of the conflict level, though this is kind of rare
   revert the assertion and early exit for conflicts within assumptions, keep the original analyzeFinal
+
+(05.01)
+
+- error with many tests with `--check-proofs --proof-granularity=theory-rewrite --proof-check=lazy`
+    Fatal failure within std::shared_ptr<cvc5::internal::ProofNode> cvc5::internal::prop::PropPfManager::getProof(bool) at cvc5/src/prop/prop_proof_manager.cpp:248  conflictProof
+  `MinisatUPSolver::getProof()` just returns nullptr
+  in cvc5 internal minisat, d_pfManager is used to output proof, and it's integrated in minisat
+  it's complicated and I don't think I need to do it

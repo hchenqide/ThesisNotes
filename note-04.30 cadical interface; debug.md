@@ -56,3 +56,31 @@
   `MinisatUPSolver::getProof()` just returns nullptr
   in cvc5 internal minisat, d_pfManager is used to output proof, and it's integrated in minisat
   it's complicated and I don't think I need to do it
+
+- `-i --sat-solver=cadical --check-unsat-cores cadical_bug5.smt2`
+    Fatal failure within void cvc5::internal::SolverEngine::checkUnsatCore() at /mnt/e/Freiburg/25s/thesis/cvc5/src/smt/solver_engine.cpp:1646
+    Internal error detected SolverEngine::checkUnsatCore(): produced core was satisfiable
+  the output is sat but it is supposed to be unsat
+  trace shows that the last solve has notified assignment {1,-2} again
+  debug shows the trail only has the two assignment, so it was cleared for some reason
+  before the third solve, the sat solver is created again
+  this is because with `--check-unsat-cores`, a new engine is created just to check the unsat core
+  `void PropEngine::getUnsatCore(std::vector<Node>& core)` only gets unsat core from assumptions or proof, but proof doesn't work yet
+  so originally with option `--check-unsat-cores`, only cvc5 internal minisat is used even with explicit `--sat-solver=cadical`
+  add option `-t unsat-core`, outputs:
+    PropEngine::getUnsatCore: via unsat assumptions
+  debug, unsat returns when assumption 9 failed
+  -8 -4 -9 were assigned just after solve start along with other inactive literals
+    notif::assignments: { 18 17 16 -8 -4 -9 15 14 13 } (level: 0, level_user: 0)
+  after checking, -8 is propagated by 16, which should not happen
+    addClause (0): 13 ~8 ~16 0
+    new propagations: 2
+    new propagation: ~16
+    new propagation: 14
+    propagate: ~16 (current assignment: 16)
+    external_clause: ~8
+    external_clause: ~16
+    external_clause: 0
+  here 13 should be part of external clause but is not added
+  this is because at propagate false literal appears and the reason clause is requested but I forgot to append activation literal
+  fixed

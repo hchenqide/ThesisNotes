@@ -47,4 +47,4 @@
   84 and 45 are closely related
     with clause at the beginning: `addClause (0): 84 ~45 ~5 0`, and 5 is assumed before 84
   so in the learned clause, the propagation literal might not be the decision literal of the conflict level, though this is kind of rare
-  revert the assertion and early exit for conflicts within assumptions, keep the original analyeFinal
+  revert the assertion and early exit for conflicts within assumptions, keep the original analyzeFinal

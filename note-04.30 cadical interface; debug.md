@@ -84,3 +84,17 @@
   here 13 should be part of external clause but is not added
   this is because at propagate false literal appears and the reason clause is requested but I forgot to append activation literal
   fixed
+
+(05.02)
+
+- error with
+    "--lang=sygus2",
+    "--sygus-unif-pi=complete",
+    "--sygus-bool-ite-return-const",
+    "--sygus-out=status",
+    "test/regress/cli/regress1/sygus/cegis-unif-inv-eq-fair.sy"
+  Fatal failure within cvc5::internal::Node cvc5::internal::theory::datatypes::SygusExtension::registerSearchValue(cvc5::internal::Node, cvc5::internal::Node, cvc5::internal::Node, unsigned int, bool, bool) at /mnt/e/Freiburg/25s/thesis/cvc5/src/theory/datatypes/sygus_extension.cpp:1062 d_anchor_to_conj.find(a) != d_anchor_to_conj.end()
+  debug, during `cb_check_found_model` callback
+  `next == lit_Undef` is true, but current trail size is 185, dec_vars is 231, order_heap size is 46, so next shouldn't be undef
+  new variables 186-231 are added during `cb_check_found_model`
+  not fixed

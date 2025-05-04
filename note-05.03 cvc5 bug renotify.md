@@ -6,6 +6,7 @@
     if(env.getOptions().smt.checkProofs) {
       return new MinisatSatSolver(env, registry);
     }
+  the option `--sub-cbqi` alone would also check proof
 
 - error occurs many times:
     Fatal failure within void cvc5::internal::SharedTermsDatabase::addSharedTerm(cvc5::internal::TNode, cvc5::internal::TNode, cvc5::internal::theory::TheoryIdSet) at cvc5/src/theory/shared_terms_database.cpp:99 theories != (*find).second

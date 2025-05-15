@@ -24,7 +24,7 @@
   learned clauses from analyze
   proof?
 
-> implementations
+> implementations (05.11)
 
 - make asynch_interrupt volatile
 

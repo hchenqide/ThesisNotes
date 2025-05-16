@@ -1,0 +1,7 @@
+cvc5/build$
+  make -j$(( $(nproc) + 1 ))
+  make check > ../../notes/temp-check.out
+
+minisat/build$
+  make
+  cmake --install . --prefix ./debug/install

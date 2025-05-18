@@ -28,7 +28,7 @@
 
   1
   --lang=sygus2 --sygus-unif-pi=complete --sygus-bool-ite-return-const --sygus-out=status cegis-unif-inv-eq-fair.sy
-  Fatal failure within cvc5::internal::Node cvc5::internal::theory::datatypes::SygusExtension::registerSearchValue(cvc5::internal::Node, cvc5::internal::Node, cvc5::internal::Node, unsigned int, bool, bool) at cvc5/src/theory/datatypes/sygus_extension.cpp:1062  d_anchor_to_conj.find(a) != d_anchor_to_conj.end()
+    Fatal failure within cvc5::internal::Node cvc5::internal::theory::datatypes::SygusExtension::registerSearchValue(cvc5::internal::Node, cvc5::internal::Node, cvc5::internal::Node, unsigned int, bool, bool) at cvc5/src/theory/datatypes/sygus_extension.cpp:1062  d_anchor_to_conj.find(a) != d_anchor_to_conj.end()
 
   1
   --rlimit-per=100 issue8854-get-model-after-unknown.smt2
@@ -40,3 +40,17 @@
   5 timeout
 
   16 assertion
+
+(05.18)
+
+- --lang=sygus2 --sygus-unif-pi=complete --sygus-bool-ite-return-const --sygus-out=status cegis-unif-inv-eq-fair.sy
+  this passed at 5.15 but failed at 5.13, change is only about disabling model check at decide
+  minisat skip cb_decide when there's no more than 1 left to decide
+  now it doesn't stop running
+  it passed during make check which runs for like 4 mins
+
+- disable the assertion
+
+- run make check
+  interrupted, tested around 1000, failed 38, all timeout
+

@@ -113,3 +113,15 @@
   --nl-ext=full --no-new-prop metitarski-3-4.smt2
   proj-issue619-nconst-nl-mv.smt2
     Timeout
+
+- api/cpp/issues/proj-issue421, rewrite in smt2
+    (set-logic QF_ALL)
+    (define-sort SeqBV4 () (Seq (_ BitVec 4)))
+    (declare-fun _x49 () SeqBV4)
+    (declare-fun _x51 () Real)
+    (define-fun t65 () SeqBV4 (seq.rev _x49))
+    (define-fun t69 () Real (tan _x51))
+    (assert (<= t69 _x51))
+    (check-sat-assuming ((not (seq.prefixof t65 _x49))))
+  minisat and cadical outputs unknown
+  minisatup stuck at check model in cb_decide and never returns

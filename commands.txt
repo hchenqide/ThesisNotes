@@ -1,7 +1,13 @@
+(from 04.15)
+
+cvc5$
+  ./configure.sh debug --auto-download --prefix=./install --dep-path="../minisat/build/debug/install;"
+
 cvc5/build$
   make -j$(( $(nproc) + 1 ))
   make check > ../../notes/temp-check.out
 
 minisat/build$
+  cmake -DCMAKE_BUILD_TYPE=Debug ..
   make
   cmake --install . --prefix ./debug/install

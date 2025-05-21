@@ -78,28 +78,8 @@
   9 failed 1 not finised
 
   unit/api/cpp/api_solver_black
-    /mnt/e/Freiburg/25s/thesis/cvc5/test/unit/api/cpp/api_solver_black.cpp:2562: Failure
-    Value of: pl.hasSeenSatClause()
-      Actual: false
-    Expected: true
-    [  FAILED  ] 1 test, listed below:
-    [  FAILED  ] TestApiBlackSolver.pluginListen
-
   unit/api/c/capi_solver_black
-    cvc5/test/unit/api/c/capi_solver_black.cpp:3782: Failure
-    Value of: clause_seen
-      Actual: false
-    Expected: true
-    [  FAILED  ] 1 test, listed below:
-    [  FAILED  ] TestCApiBlackSolver.plugin_listen
-
   unit/api/c/capi_uncovered_black
-    cvc5/test/unit/api/c/capi_uncovered_black.cpp:387: Failure
-    Value of: pl.hasSeenSatClause()
-      Actual: false
-    Expected: true
-    [  FAILED  ] 1 test, listed below:
-    [  FAILED  ] TestCApiBlackUncovered.plugin_uncovered_default
 
   api/cpp/issues/proj-issue421
     not finished
@@ -125,3 +105,32 @@
     (check-sat-assuming ((not (seq.prefixof t65 _x49))))
   minisat and cadical outputs unknown
   minisatup stuck at check model in cb_decide and never returns
+  breakpoints always hits gmp so there's some calculation in a permanent loop
+
+(05.20)
+
+  `transcendental_purify_arg_21` is assigned with a large fraction in minisatup, but with simple number in cadical
+
+(05.21)
+
+- rebase on main
+
+- replace minisatup with cadical and run make check for baseline
+
+  12 failed
+
+  regress1/strings/issue5611-deq-norm-emp.smt2
+  regress1/sets/finite-type/sets-card-color-sat.smt2
+
+  unit/api/cpp/api_solver_black
+  unit/api/c/capi_solver_black
+  unit/api/c/capi_uncovered_black
+
+  7 timeout
+    regress1/nl/nl_uf_lalt.smt2
+    regress1/quantifiers/issue5735-subtypes.smt2
+    regress0/nl/dd.sin-cos-346-b-chunk-0210.smt2
+    regress1/sygus/proj-issue165.smt2
+    regress1/arith/issue7252-arith-sanity.smt2
+    regress2/arith/real2int-test.smt2
+    regress0/arith/issue1399.smt2

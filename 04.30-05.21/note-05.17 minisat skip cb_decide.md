@@ -134,3 +134,10 @@
     regress1/arith/issue7252-arith-sanity.smt2
     regress2/arith/real2int-test.smt2
     regress0/arith/issue1399.smt2
+
+(05.23)
+
+- make check on minisatup
+  
+  9 failed 1 unfinished
+  the same as last make check

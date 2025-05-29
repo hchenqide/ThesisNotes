@@ -11,3 +11,13 @@ minisat/build$
   cmake -DCMAKE_BUILD_TYPE=Debug ..
   make
   cmake --install . --prefix ./debug/install
+
+
+(git update)
+(at current dev branch)
+
+cvc5$
+git fetch upstream
+git rebase upstream/main
+git push --force
+git push origin upstream/main:main

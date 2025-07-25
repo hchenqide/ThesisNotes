@@ -21,3 +21,9 @@ git fetch upstream
 git rebase upstream/main
 git push --force
 git push origin upstream/main:main
+
+
+(git delete remote branch)
+git push origin --delete origin/cadical-test
+(remove deleted remote branches)
+git remote prune origin

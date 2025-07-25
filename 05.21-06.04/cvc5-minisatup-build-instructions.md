@@ -1,40 +1,24 @@
-# Build Instructions for cvc5 with MinisatUP
+# Build Instructions for cvc5 with MiniSatUP
 
-## 1. In the same parent folder, clone minisatup and cvc5 from development branches
+> changes overview:
+> - auto download and build MiniSatUP in cvc5
+> - add `--sat-solver=minisatup` option in cvc5
+
+## 1. Clone cvc5 from development branch
 
 ```
-git clone --depth 1 --branch cvc5-ipasirup https://github.com/hchenqide/minisat.git
-
 git clone --depth 1 --branch minisatup-ipasirup https://github.com/hchenqide/cvc5.git
 ```
 
-> note: in this version of cvc5, both options `--sat-solver=minisat` and `--sat-solver=cadical` will actually use `minisatup`
-
-## 2. Build MinisatUP and cvc5
-
-### Debug mode
-
-**MinisatUP**
-
-```
-cd minisat
-
-# minisat$
-mkdir build; cd build
-
-# minisat/build$
-cmake -DCMAKE_BUILD_TYPE=Debug ..
-make
-cmake --install . --prefix ./debug/install
-```
-
-**cvc5**
+## 2. Configure and build cvc5
 
 ```
 cd cvc5
 
 # cvc5$
-./configure.sh debug --auto-download --prefix=./install --dep-path="../minisat/build/debug/install;"
+./configure.sh debug --auto-download
+# change debug to production in release mode
+
 cd build
 
 # cvc5/build$
@@ -44,41 +28,7 @@ make -j$(( $(nproc) + 1 ))
 make check > check.out
 ```
 
-### Release mode
-
-> simply change build types from debug to release(production)
-
-**MinisatUP**
-
-```
-cd minisat
-
-# minisat$
-mkdir build; cd build
-
-# minisat/build$
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make
-cmake --install . --prefix ./release/install
-```
-
-**cvc5**
-
-```
-cd cvc5
-
-# cvc5$
-./configure.sh production --auto-download --prefix=./install --dep-path="../minisat/build/release/install;"
-cd build
-
-# cvc5/build$
-make -j$(( $(nproc) + 1 ))
-
-# (optional) make check
-make check > check.out
-```
-
-> note: this configure option `--dep-path="../minisat/build/debug/install;"` only works when cvc5 and minisat are in the same parent folder, otherwise it should be pointed to the actual folder
+> note: MiniSatUP will be downloaded and built from https://github.com/hchenqide/minisat.git, branch `cvc5-ipasirup` (cvc5/cmake/FindMiniSatUP.cmake)
 
 ### 3. Test with cvc5 binary
 

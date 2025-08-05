@@ -67,12 +67,6 @@ normalize:
   (replace F with F in max level)
   - UF (others F <= b): assign new
 
-- UF (others U, F):
-  (replace F with U)
-  - UU
-  (replace F with F in max level)
-  - UF (others F <= b): assign new
-
 - TF (others T, U, F):
   - TF (a <= b, others T, U, F)
   - TF (a > b, others T, U, F): normalize
@@ -184,7 +178,7 @@ unassign: (both branches)
 
 - TF (a <= b, others T, U, F)
   - UF (others T, U, F): normalize
-  -* TF (others U, F): normalize
+  - TF (a <= b, others T, U, F)
   - TU (others U, F) as TU (others T, U, F)
 
 - TU (others T, U, F)
@@ -194,3 +188,15 @@ unassign: (both branches)
   - UU (others T, U, F)
   - UT (others T, U, F)
   - TU (others T, U, F)
+
+
+only TF (a = b, others F <= b) can be a reason clause (not necessarily be a reason clause), if it no longer holds even if relaxed, like TF (a <= b, others F <= b), TF (a <= b, others F) or TF (a <= b, others T, U, F), it can no longer be the reason clause, which causes a variable to change reason or unassign
+- in assign/reassign: if new assignment/reassignment happen, the reason clause is set/updated
+- in unassign: the others literals are not watched, so when they become unassigned, the affected reason clauses can't be retrieved, unless with full watching
+
+TF (a = b, others F <= b): (reason clause)
+(reassign)
+- TF (a <= b, others F <= b)
+- TF (a > b, others F): normalize
+
+(reassign negation)

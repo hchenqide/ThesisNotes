@@ -1,4 +1,4 @@
-# chronological backtracking in MiniSat
+# chronological backtracking
 
 cases:
 - assign a new variable at a lower level
@@ -14,15 +14,18 @@ decision variables?
 
 analyze produces a clause that reassigns negation
 trail is no longer needed, no backtracking, only propagation queue for updating assignments
+level is still needed even though the order is arbitrary, levels can be optimized if no assignments left on this level
 
 
 invariant on watching literals:
 (each clause is watched by 2 literals with assignments: (actual levels a, b))
 - stable states:
-  - UU: U, U (others U or F)
+  - UT: T/U, T/U (others T, U or F) (merged cases without falsified watching literals)
+    - UU: U, U (others U or F)
+    - TU: T, U (others U or F)
+    - TT: T, T (others T, U or F)
+    - UT...
   - TF: T, F (a <= b, others F <= b)
-  - TU: T, U (others U or F)
-  - TT: T, T (others T, U or F)
 - unstable states:
   - FFP: F, F (a > b, others F <= b): reassign negation propagate
     - TF
@@ -35,56 +38,41 @@ invariant on watching literals:
     - TF
 
 adding external clause:
-- FFP
-- FFC
-- UF
+- FFP: reassign negation propagate
+- FFC: analyze
+- UF: assign propagate
 - UU
-- TFP
+- TFP: reassign propagate
 - TF
 - TU
 - TT
 
 assign propagate: (subsequent assignments on the same level)
-- UU:
+- UT: (after searching and reordering)
+  (still two T/U watching, others T, U, F)
+  - UT
+  (at least one F watching, others F <= b)
   - FFP: reassign negation propagate
   - FFC: analyze
   - UF: assign propagate
-  - UU
-- TF
-- TU:
   - TFP: reassign propagate
   - TF
-  - TU
-  - TT
-- TT
-  - TT
+- TF
 
 reassign propagate: (new level < current level)
-- UU
+- UT
 - TF:
   - TFP: reassign propagate
   - TF
-- TU
-- TT
 
 reassign negation propagate: (new level < current level)
-- UU:
-  - UU
-  - TU
-- TF:
+- UT: (after searching and reordering)
+  (still two T/U watching, others T, U, F)
+  - UT
+  (at least one F watching, others F <= b)
   - FFP: reassign negation propagate
   - FFC: analyze
+  - UF: assign propagate
   - TFP: reassign propagate
   - TF
-  - TT
-- TU:
-  - UF:
-  - UU
-  - TU
-  - TT
-- TT:
-  - FFP: reassign negation propagate
-  - FFC: analyze
-  - TFP: reassign propagate
-  - TF
-  - TT
+

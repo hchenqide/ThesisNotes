@@ -25,7 +25,7 @@ states of 2-watching literals: (actual levels a, b)
 (stable)
 - UU (others T, U, F)
 - UT (others T, U, F)
-- TF (a <= b, others F)
+- TF (a <= b, others T, U, F)
 - TU (others T, U, F)
 - TT (others T, U, F)
 
@@ -45,18 +45,7 @@ normalize:
   (replace one F with U, replace one F with F in max level)
   - UF (others F <= b): assign new
   (replace one F with T, replace one F with F >= a)
-  - TF (a <= b, others F)
-  (replace one F with T, replace one F with F in max level)
-  - TF/P (a > b, others F <= b): reassign
-  (replace two F in max level)
-  - FF/P (a > b, others F <= b): reassign negation
-  - FF/C (a = b, others F <= b): analyze
-
-- FF (others T, F):
-  (replace two F with T)
-  - TT
-  (replace one F with T, replace one F with F >= a)
-  - TF (a <= b, others F)
+  - TF (a <= b, others F) as TF (a <= b, others T, U, F)
   (replace one F with T, replace one F with F in max level)
   - TF/P (a > b, others F <= b): reassign
   (replace two F in max level)
@@ -71,10 +60,6 @@ normalize:
   (swap)
   - TF (others T, U, F): normalize
 
-- FT (others T, F):
-  (swap)
-  - TF (others T, F): normalize
-
 - UF (others T, U, F):
   (replace F with T or U)
   - UU
@@ -82,26 +67,28 @@ normalize:
   (replace F with F in max level)
   - UF (others F <= b): assign new
 
-- TF (others T, U, F):
-  (replace F with T or U)
-  - UT
-  - TT
-  (replace F with F >= a)
-  - TF (a <= b, others F)
+- UF (others U, F):
+  (replace F with U)
+  - UU
   (replace F with F in max level)
-  - TF/P (a > b, others F <= b): reassign
+  - UF (others F <= b): assign new
 
-- TF (others T, F):
-  (replace F with T)
+- TF (others T, U, F):
+  - TF (a <= b, others T, U, F)
+  - TF (a > b, others T, U, F): normalize
+
+- TF (a > b, others T, U, F):
+  (replace F with T or U)
+  - TU
   - TT
   (replace F with F >= a)
-  - TF (a <= b, others F)
+  - TF (a <= b, others F) as TF (a <= b, others T, U, F)
   (replace F with F in max level)
   - TF/P (a > b, others F <= b): reassign
 
 - TF (a > b, others F):
   (replace F with F >= a)
-  - TF (a <= b, others F)
+  - TF (a <= b, others F) as TF (a <= b, others T, U, F)
   (replace F with F in max level)
   - TF/P (a > b, others F <= b): reassign
 
@@ -146,7 +133,7 @@ assign new: (false branch)
   - FT (others T, U, F): normalize
   - TT (others T, U, F)
 
-- TF (a <= b, others F)
+- TF (a <= b, others T, U, F)
 
 - TU (others T, U, F):
   - TF (others T, U, F): normalize
@@ -160,9 +147,9 @@ reassign: (false branch)
 
 - UT (others T, U, F)
 
-- TF (a <= b, others F)
-  - TF (a <= b, others F)
-  - TF (a > b, others F): normalize
+- TF (a <= b, others T, U, F)
+  - TF (a <= b, others T, U, F)
+  - TF (a > b, others T, U, F): normalize
 
 - TU (others T, U, F)
 
@@ -175,10 +162,10 @@ reassign negation: (false branch)
 - UT (others T, U, F)
   - UF (others T, U, F): normalize
 
-- TF (a <= b, others F)
-  - FF (others T, F): normalize
-  - FT (others T, F): normalize
-  - TT (others T, F) < (others T, U, F)
+- TF (a <= b, others T, U, F)
+  - FF (others T, U, F): normalize
+  - FT (others T, U, F): normalize
+  - TT (others T, U, F) as TT (others T, U, F)
 
 - TU (others T, U, F)
   - FU (others T, U, F): normalize
@@ -195,10 +182,10 @@ unassign: (both branches)
 - UT (others T, U, F)
   - UU (others T, U, F)
 
-- TF (a <= b, others F)
-  - UF (others U, F): normalize
-  - TF (others U, F): normalize
-  - TU (others U, F) < (others T, U, F)
+- TF (a <= b, others T, U, F)
+  - UF (others T, U, F): normalize
+  -* TF (others U, F): normalize
+  - TU (others U, F) as TU (others T, U, F)
 
 - TU (others T, U, F)
   - UU (others T, U, F)

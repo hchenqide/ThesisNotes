@@ -17,37 +17,145 @@ trail is no longer needed, no backtracking, only propagation queue for updating 
 level is still needed even though the order is arbitrary, levels can be optimized if no assignments left on this level
 
 
-invariant on watching literals:
-(each clause is watched by 2 literals with assignments: (actual levels a, b))
-- stable states:
-  - UT: T/U, T/U (others T, U or F) (merged cases without falsified watching literals)
-    - UU: U, U (others U or F)
-    - TU: T, U (others U or F)
-    - TT: T, T (others T, U or F)
-    - UT...
-  - TF: T, F (a <= b, others F <= b)
-- unstable states:
-  - FFP: F, F (a > b, others F <= b): reassign negation propagate
-    - TF
-  - FFC: F, F (a = b, others F <= b): analyze, producing learned clause FFP
-    - FFP, FFC
-      - TF
-  - UF: U, F (others F <= b): assign propagate
-    - TF
-  - TFP: T, F (a > b, others F <= b): reassign propagate
-    - TF
+states of unit clause:
+(stable)
+- T
+(unstable)
+- F: UNSAT
+- U: assign propagate
+
+states of 2-watching literals: (actual levels a, b)
+(stable)
+- UU (others T, U, F)
+- UT (others T, U, F)
+- TF (a <= b, others F <= b)
+- TU (others T, U, F)
+- TT (others T, U, F)
+(unstable normalized)
+- FF/P (a > b, others F <= b): reassign negation propagate
+- FF/C (a = b, others F <= b): analyze, producing learned clause FFP, or UNSAT
+- UF (others F <= b): assign propagate
+- TF/P (a > b, others F <= b): reassign propagate
+(normalization)
+- FF (others T, U, F):
+  (replace two F with T or U)
+  - UU
+  - UT
+  - TU
+  - TT
+  (replace one F with T or U, replace one F with F in max level)
+  - UF (others F <= b): assign propagate
+  - TF/P (a > b, others F <= b): reassign propagate
+  - TF (a <= b, others F <= b)
+  (replace one F with F in max level, replace one F with F in second max level)
+  - FF/P (a > b, others F <= b): reassign negation propagate
+  - FF/C (a = b, others F <= b): analyze
+- FU (others T, U, F):
+  (replace F with T or U)
+  - UU
+  - TU
+  (replace F with F in max level, swap)
+  - UF (others F <= b): assign propagate
+- FT (others T, U, F):
+  (replace F with T or U)
+  - UT
+  - TT
+  (replace F with F in max level, swap)
+  - TF/P (a > b, others F <= b): reassign propagate
+  - TF (a <= b, others F <= b)
+- UF (others T, U, F):
+  (replace F with T or U)
+  - UU
+  - TU
+  (replace F with F in max level)
+  - UF (others F <= b): assign propagate
+- TF (others T, U, F):
+  (replace F with T or U)
+  - UT
+  - TT
+  (replace F with F in max level)
+  - TF/P (a > b, others F <= b): reassign propagate
+  - TF (a <= b, others F <= b)
+- TF (others F):
+  (replace F with F in max level)
+  - TF/P (a > b, others F <= b): reassign propagate
+  - TF (a <= b, others F <= b)
+
+normalize:
+(find two T, U)
+- found one: find one T, U
+- find two max F
+(find one T, U)
+- found one: stop
+- find max F
+(find max F)
+- found max F: stop
+
 
 adding external clause:
-- FFP: reassign negation propagate
-- FFC: analyze
-- UF: assign propagate
+(length = 0)
+- UNSAT
+(length = 1)
+- F: UNSAT
+- U: assign propagate
+- T
+(length >= 2)
+- FF: normalize (find-2)
+- FU: normalize (swap, find-1)
+- FT: normalize (swap, find-1)
+- UF: normalize (find-1)
 - UU
-- TFP: reassign propagate
-- TF
+- UT
+- TF: normalize (find-1)
 - TU
 - TT
 
-assign propagate: (subsequent assignments on the same level)
+
+in one temporary propagation queue, all assignments/reassignments are on the same level, reassignments are on a lower level than original level
+
+
+assign propagate: (only false branch of new assignments affected)
+- UU (others T, U, F):
+  - FF (others T, U, F): normalize (find-2)
+  - FU (others T, U, F): normalize (swap, find-1)
+  - FT (others T, U, F): normalize (swap, find-1)
+  - UF (others T, U, F): normalize (find-1)
+  - UT (others T, U, F)
+  - TF (others T, U, F): normalize (find-1)
+  - TU (others T, U, F)
+  - TT (others T, U, F)
+- UT (others T, U, F):
+  - FT (others T, U, F): normalize (swap, find-1)
+  - TT (others T, U, F)
+- TF (a <= b, others F <= b)
+- TU (others T, U, F):
+  - TF (others T, U, F): normalize (find-1)
+  - TT (others T, U, F)
+- TT (others T, U, F)
+
+
+reassign propagate:
+- UU (others T, U, F)
+- UT (others T, U, F)
+- TF (a <= b, others F <= b)
+  - TF (others F): normalize (find-max)
+- TU (others T, U, F)
+- TT (others T, U, F)
+
+
+reassign negation propagate:
+- UU (others T, U, F)
+- UT (others T, U, F)
+  - UF (others T, U, F): normalize (find-1)
+- TF (a <= b, others F <= b)
+
+
+- TU (others T, U, F)
+- TT (others T, U, F)
+
+
+
+
 - UT: (after searching and reordering)
   (still two T/U watching, others T, U, F)
   - UT
@@ -57,22 +165,9 @@ assign propagate: (subsequent assignments on the same level)
   - UF: assign propagate
   - TFP: reassign propagate
   - TF
-- TF
-
-reassign propagate: (new level < current level)
-- UT
 - TF:
-  - TFP: reassign propagate
-  - TF
-
-reassign negation propagate: (new level < current level)
-- UT: (after searching and reordering)
-  (still two T/U watching, others T, U, F)
-  - UT
-  (at least one F watching, others F <= b)
   - FFP: reassign negation propagate
   - FFC: analyze
-  - UF: assign propagate
   - TFP: reassign propagate
   - TF
-
+  - UT

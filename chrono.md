@@ -15,29 +15,39 @@ decision variables?
 
 invariant on watching literals:
 - each clause is watched by 2 literals with assignments: (actual levels a, b)
-  - A unassigned, unassigned (others unassigned or false)
-  - B true~a, false~b (a <= b, others false <= b)
-  - C true~a, unassigned (others unassigned or false)
-  - D true~a, true~b (a <= b, others true >= b, unassigned or false)
+  - A: U, U (others U or F)
+  - B: T, F (a <= b, others F <= b)
+  - C: T, U (others U or F)
+  - D: T, T (others T, U or F)
 
-assign a variable at level k: (k not necessarily current decision level) (all subsequent assignments can only be on the same level k)
-  - A unassigned, unassigned (others unassigned or false):
-    - A unassigned, unassigned (others unassigned or false): end
-    - unassigned
-  - B true~a, false~b (a <= b, others false <= b): not possible
-  - C true~a, unassigned (others unassigned or false):
-    - B true~a, false~b (a <= b, others false <= b): end
-    - true~a, false~b (a > b, others false <= b): reassign propagate
-      - B true~a, false~b (a = b, others false <= b): end
-    - C true~a, unassigned (others unassigned or false): end
-    - D true~a, true~b (a <= b, others true >= b, unassigned or false):
-  - D true~a, true~b (a <= b, others true >= b, unassigned or false):
-    - D true~a, true~b (a <= b, others true >= b, unassigned or false): end
-    - E true~a, true~b (a <= b, others true, unassigned or false): end
-  - E true~a, true~b (a <= b, others true, unassigned or false):
-    - E true~a, true~b (a <= b, others true, unassigned or false): end
+adding external clause:
+- F, F (a > b, others F <= b): reassign negation propagate
+  - B: end
+- F, F (a = b, others F <= b): analyze
 
-reassign a variable:
+- U, F (others F <= b): assign propagate
 
 
-reassign a variable with negation:
+assign propagate: (subsequent assignments on the same level)
+- A: U, U (others U or F):
+  - .. F, F (a > b, others F <= b): reassign negation propagate
+    - B: T, F (a = b, others F <= b): end
+  - .. F, F (a = b, others F <= b): analyze
+
+  - .. U, F (others F <= b): assign propagate
+    - B: T, F (a = b, others F <= b): end
+  - A: U, U (others U or F): end
+- B: T, F (a <= b, others F <= b): not possible
+- C: T, U (others U or F):
+  - B: T, F (a <= b, others F <= b): end
+  - .. T, F (a > b, others F <= b): reassign propagate
+    - B: T, F (a = b, others F <= b): end
+  - C: T, U (others U or F): end
+  - D: T, T (others T, U or F): end
+- D: T, T (others T, U or F):
+  - D: T, T (others T, U or F): end
+
+reassign propagate:
+
+
+reassign negation propagate:

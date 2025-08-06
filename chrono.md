@@ -293,87 +293,103 @@ reassign: (higher level)
 
 reason clause state:
 (valid)
-- TF (a = b, others F <= a/b)
-(invalidated)
-- TF (a = b, others U, F <= a/b)
-- TF (a = b, others T < a/b, F <= a/b)
-- TU (others U, F)
-- TT (a > b, others T < a, F <= a)
+- TF (a = b, others F <= a/b) < TF (a <= b)
 (maybe valid)
-- TF (a = b, others T, U, F):
+- TF (a <= b)
+(invalid)
+- TU
+- TT
 
-- TF (a <= b, others U, F):
-  - TF (a < b, others U, F): invalidated
-  - TF (a = b, others U!, F): invalidated
-  - TF (a = b, others F! > a/b, F): invalidated
-  - TF (a = b, others F <= a/b): valid
-- TF (a <= b, others F):
-  - TF (a < b, others F): invalidated
-  - TF (a = b, others F! > a/b, F): invalidated
-  - TF (a = b, others F <= a/b): valid
 
 reason clause state transition: (target variable)
 assign new:
-(valid)
 - TF (a = b, others F <= a/b):
-  - TF (a = b, others F <= a/b): reason unchanged
-(invalidated)
-- TF (a = b, others U, F <= a/b):
-  - TF (a = b, others T, U, F <= a/b): maybe valid
-- TF (a = b, others T < a/b, F <= a/b):
-  - TF (a = b, others T < a/b, F <= a/b): reason invalidated
-- TU (others U, F):
-  - TF (a <= b, others U, F): maybe valid
-  - TF (a > b, others U, F): normalize
-    - TU (others U, F): reason invalidated
-    - TF (a <= b, others F): maybe valid
-    - TF (a > b, others F): reassign
-      - TF (a = b, others F <= a/b): reason unchanged
-  - TU (others U, F): reason invalidated
-- TT (a > b, others T < b, F <= b):
-  - TT (a > b, others T < b, F <= b): reason invalidated
+  - TF (a = b, others F <= a/b) -> unchanged
+- TF (a <= b):
+  - TF (a <= b) -> maybe valid
+- TU:
+  - TF (a <= b) -> maybe valid
+  - TF (a > b): normalize
+    - TU: invalid
+    - TT: invalid
+    - TF (a <= b) -> maybe valid
+    - TF/P (a > b, others F <= b): reassign
+      - TF (a = b, others F <= a/b) -> unchanged
+  - TU (others U, F) -> invalid
+- TT:
+  - TT -> invalid
 
 reassign: (lower level)
-(valid)
 - TF (a = b, others F <= a/b):
   (target variable)
-  - reason changed
+  -> changed
   (others)
-  - TF (a = b, others F <= a/b): reason unchanged
+  - TF (a = b, others F <= a/b) -> unchanged
   - TF (a > b, others F <= a): normalize
-    - TF (a = b, others F <= a/b): reason unchanged
+    - TF (a = b, others F <= a/b) -> unchanged
     - TF (a > b, others F <= b): reassign
-      - TF (a = b, others F <= a/b): reason unchanged
-(invalidated)
-
+      - TF (a = b, others F <= a/b) -> unchanged
+- TF (a <= b):
+  - TF (a <= b) -> maybe valid
+  - TF (a > b): normalize
+    - TU -> invalid
+    - TT -> invalid
+    - TF (a <= b) -> maybe valid
+    - TF/P (a > b, others F <= b): reassign
+      - TF (a = b, others F <= a/b) -> unchanged
+- TU:
+  - TU -> invalid
+- TT:
+  - TT -> invalid
 
 reassign negation: (lower level)
-(valid)
 - TF (a = b, others F <= a/b):
-  (target variable)
-  - reason changed
-  (others)
-  - TF (a = b, others T < a/b, F <= a/b): reason invalidated
-  - TT (a > b, others T < a, F <= a): reason invalidated
-(invalidated)
-
+  - FF -> changed
+  - FT -> changed
+  - TF (a = b, others T < a/b, F <= a/b) < TF (a <= b) -> invalid
+  - TT (a > b, others T < a, F <= a) -> invalid
+- TF (a <= b):
+  - FF -> changed
+  - FT -> changed
+  - TF (a <= b) -> maybe valid
+  - TT -> invalid
+- TU:
+  - FU -> changed
+  - TU: invalid
+- TT
+  - FF -> changed
+  - FT -> changed
+  - TF (a <= b) -> maybe valid
+  - TF (a > b): normalize
+    - TU -> invalid
+    - TT -> invalid
+    - TF (a <= b) -> maybe valid
+    - TF/P (a > b, others F <= b): reassign
+      - TF (a = b, others F <= a/b) -> unchanged
+  - TT -> invalid
 
 unassign:
-(valid)
 - TF (a = b, others F <= a/b):
-  (target variable)
-  - reason dropped
-  (others)
-  - TF (a = b, others U, F <= a/b): reason invalidated
-  - TU (others U, F <= a) < TU (others U, F): reason invalidated
-(invalidated)
+  - UF -> dropped
+  - TF (a = b, others U, F <= a/b) < TF (a <= b) -> invalid
+  - TU (others U, F <= a) < TU (others U, F) -> invalid
+- TF (a <= b):
+  - UF -> dropped
+  - TF (a <= b) -> maybe valid
+  - TU -> invalid
+- TU:
+  - UU -> dropped
+  - TU -> invalid
+- TT:
+  - UU -> dropped
+  - UT -> dropped
+  - TU -> invalid
 
 
+- unassigning happens through reason clauses (deleted or invalid)
+- an invalid reason can happen to become valid again, so unassigning should happen lazily, or just reassigning to higher level without unassigning
 
-- unassigning happens through reason clauses (deleted or invalidated)
-- an invalidated reason can happen to become valid again, so unassigning should happen lazily, or just reassigning to higher level without unassigning
-
-- during conflict analysis, reason clauses invalidated can be lazily discovered and dropped
+- during conflict analysis, invalid reason clauses can be lazily discovered and dropped
 - actually the assignments with invalid reason clauses can just be regarded as decisions
 - three decisions on the same level that caused a conflict can cause reassignment on a higher level
 - so all decision can be made on level 0, until there is a conflict then the level of second is increased to propagate the third

@@ -8,6 +8,7 @@ decision variables?
 analyze produces a clause that reassigns negation
 trail is no longer needed, no backtracking, only propagation queue for updating assignments
 level is still needed even though the order is arbitrary, levels can be optimized if no assignments left on this level
+keep the number of variables on each level
 
 once a variable is assigned, it can never get unassigned
 support unassigning a variable? (deleting a clause)
@@ -193,6 +194,10 @@ unassign: (both branches)
 only TF (a = b, others F <= b) can be a reason clause (not necessarily be a reason clause), if it no longer holds even if relaxed, like TF (a <= b, others F <= b), TF (a <= b, others F) or TF (a <= b, others T, U, F), it can no longer be the reason clause, which causes a variable to change reason or unassign
 - in assign/reassign: if new assignment/reassignment happen, the reason clause is set/updated
 - in unassign: the others literals are not watched, so when they become unassigned, the affected reason clauses can't be retrieved, unless with full watching
+- but during conflict analysis, it can be lazily discovered and unassigned, thus even able to resolve a conflict
+- actually the assignments with invalid reason clauses can just be regarded as decisions
+- three decisions on the same level that caused a conflict can cause reassignment on a higher level
+- so all decision can be made on level 0, until there is a conflict then the level of second is increased to propagate the third
 
 TF (a = b, others F <= b): (reason clause)
 (reassign)
@@ -200,3 +205,8 @@ TF (a = b, others F <= b): (reason clause)
 - TF (a > b, others F): normalize
 
 (reassign negation)
+
+
+todo:
+1. unstable states maintance
+2. reassignment on higher level

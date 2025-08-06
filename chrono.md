@@ -264,38 +264,68 @@ unassign:
   - TU
 
 
-reason clause
-TF (a = b, others F <= b):
+reassign: (higher level)
+(static)
+- UU:
+  - UU
+- UT:
+  - UT
+- TF (a <= b):
+  - TF (a <= b)
+  - TF (a > b): normalize
+- TU
+  - TU
+- TT
+  - TT
+(normalizing)
+- FF:
+  - FF: normalize
+- FU:
+  - FU: normalize
+- FT:
+  - FT: normalize
+- UF:
+  - UF: normalize
+- TF (a > b):
+  - TF (a <= b)
+  - TF (a > b): normalize
+
+
+reason clause:
 assign new:
-- TF (a = b, others F <= b): still reason
+- TF (a = b, others F <= b):
+  - TF (a = b, others F <= b): reason unchanged
 
 reassign: (lower level)
-- TF (a = b, others F <= b): still reason
-- TF (a > b, others F <= a): normalize
-  - TF (a = b, others F <= b): still reason
-  - TF (a > b, others F <= b): reassign, still reason
-- TF (a = b, others F): not reason, normalize
-  - TF (a = b, others F <= b)
-  - TF (a < b, others F <= b)
-- TF (a < b, others F <= b): not reason
+- TF (a = b, others F <= b):
+  - TF (a = b, others F <= b): reason unchanged
+  - TF (a > b, others F <= a): normalize
+    - TF (a = b, others F <= b): reason unchanged
+    - TF (a > b, others F <= b): reassign, reason unchanged
+  - TF (a = b, others F): reason reassigned, normalize
+    - TF (a = b, others F <= b)
+    - TF (a < b, others F <= b)
+  - TF (a < b, others F <= b): reason reassigned
 
 reassign negation: (lower level)
-- FF: not reason, normalize
-- FT: not reason, normalize
-- TF (a = b, others T < b, F <= b): invalid reason, unassign
-- TT: invalid reason, unassign
+- TF (a = b, others F <= b):
+  - FF: reason reassigned, normalize
+  - FT: reason reassigned, normalize
+  - TF (a = b, others T < b, F <= b): reason invalidated, unassign
+  - TT: reason invalidated, unassign
+
+unassign:
+- TF (a = b, others F <= b):
+  - UF (others U, F <= b): reason dropped
+  - UU (others U, F <= b): reason dropped
+  - TF (a = b, others U, F <= b): reason invalidated, unassign
+  - TU (others U, F <= b): reason invalidated, unassign
 
 
-reassign: (higher level)
+- unassigning happens through reason clauses (deleted or invalidated)
 
 
-
-
-
-- only TF (a = b, others F <= b) can be a reason clause (not necessarily be a reason clause), if it no longer holds even if relaxed, like TF (a <= b, others F <= b), TF (a <= b, others F) or TF (a <= b), it can no longer be the reason clause, which causes a variable to change reason or unassign
-- in assign/reassign: if new assignment/reassignment happen, the reason clause is set/updated
-- in unassign: the others literals are not watched, so when they become unassigned, the affected reason clauses can't be retrieved, unless with full watching
-- but during conflict analysis, it can be lazily discovered and unassigned, thus even able to resolve a conflict
+- during conflict analysis, reason clauses invalidated can be lazily discovered and dropped
 - actually the assignments with invalid reason clauses can just be regarded as decisions
 - three decisions on the same level that caused a conflict can cause reassignment on a higher level
 - so all decision can be made on level 0, until there is a conflict then the level of second is increased to propagate the third

@@ -241,7 +241,6 @@ reassign negation: (lower level)
   - TF (a > b): normalize
   - TT
 
-
 - all normalize cases can be accessed from the false branch of an assignment
 
 
@@ -262,33 +261,6 @@ unassign:
   - UU
   - UT
   - TU
-
-
-reassign: (higher level)
-(static)
-- UU:
-  - UU
-- UT:
-  - UT
-- TF (a <= b):
-  - TF (a <= b)
-  - TF (a > b): normalize
-- TU
-  - TU
-- TT
-  - TT
-(normalizing)
-- FF:
-  - FF: normalize
-- FU:
-  - FU: normalize
-- FT:
-  - FT: normalize
-- UF:
-  - UF: normalize
-- TF (a > b):
-  - TF (a <= b)
-  - TF (a > b): normalize
 
 
 reason clause state:
@@ -389,7 +361,21 @@ unassign:
 - unassigning happens through reason clauses (deleted or invalid)
 - an invalid reason can happen to become valid again, so unassigning should happen lazily, or just reassigning to higher level without unassigning
 
-- during conflict analysis, invalid reason clauses can be lazily discovered and dropped
-- actually the assignments with invalid reason clauses can just be regarded as decisions
-- three decisions on the same level that caused a conflict can cause reassignment on a higher level
+- during conflict analysis, invalid reason clauses are lazily discovered
+- assignments with invalid reason clauses are regarded as decisions
+- multiple decisions can be on the same level. during conflict analysis, decisions on the highest level: (so that learnt clause wouldn't be conflict itself (contains more than 2 falses on the highest level))
+  - one: reassign negation on a lower level by learnt clause
+  - two: one of them reassign negation on the same level by learnt clause
+  - more than two: find another level, either reusing lower levels or allocating higher levels, and put two on the highest level:
+    - use a lower level: others reassign on the lower level, one of the two left reassign negation on the same level
+    - use a higher level: one of the two reassign on the higher level, the other reassign negation on the higher level
+
 - so all decision can be made on level 0, until there is a conflict then the level of second is increased to propagate the third
+- is it possible to use two levels only?
+
+
+reassign negation: (same level)
+
+reassign: (higher level)
+
+reassign negation: (higher level)

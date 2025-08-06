@@ -297,9 +297,20 @@ reason clause state:
 (invalidated)
 - TF (a = b, others U, F <= a/b)
 - TF (a = b, others T < a/b, F <= a/b)
-- TU (others U, F <= a)
+- TU (others U, F)
 - TT (a > b, others T < a, F <= a)
+(maybe valid)
+- TF (a = b, others T, U, F):
 
+- TF (a <= b, others U, F):
+  - TF (a < b, others U, F): invalidated
+  - TF (a = b, others U!, F): invalidated
+  - TF (a = b, others F! > a/b, F): invalidated
+  - TF (a = b, others F <= a/b): valid
+- TF (a <= b, others F):
+  - TF (a < b, others F): invalidated
+  - TF (a = b, others F! > a/b, F): invalidated
+  - TF (a = b, others F <= a/b): valid
 
 reason clause state transition: (target variable)
 assign new:
@@ -308,15 +319,17 @@ assign new:
   - TF (a = b, others F <= a/b): reason unchanged
 (invalidated)
 - TF (a = b, others U, F <= a/b):
-  - TF (a = b, others T, U, F): reason invalidated
+  - TF (a = b, others T, U, F <= a/b): maybe valid
 - TF (a = b, others T < a/b, F <= a/b):
   - TF (a = b, others T < a/b, F <= a/b): reason invalidated
-- TU (others U, F <= a):
+- TU (others U, F):
   - TF (a <= b, others U, F): maybe valid
   - TF (a > b, others U, F): normalize
     - TU (others U, F): reason invalidated
-    - TF (a < b, others F):
-  - TU (others U, F <= b): reason invalidated
+    - TF (a <= b, others F): maybe valid
+    - TF (a > b, others F): reassign
+      - TF (a = b, others F <= a/b): reason unchanged
+  - TU (others U, F): reason invalidated
 - TT (a > b, others T < b, F <= b):
   - TT (a > b, others T < b, F <= b): reason invalidated
 
@@ -352,7 +365,7 @@ unassign:
   - reason dropped
   (others)
   - TF (a = b, others U, F <= a/b): reason invalidated
-  - TU (others U, F <= a): reason invalidated
+  - TU (others U, F <= a) < TU (others U, F): reason invalidated
 (invalidated)
 
 

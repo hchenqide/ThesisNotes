@@ -291,39 +291,74 @@ reassign: (higher level)
   - TF (a > b): normalize
 
 
-reason clause:
+reason clause state:
+(valid)
+- TF (a = b, others F <= a/b)
+(invalidated)
+- TF (a = b, others U, F <= a/b)
+- TF (a = b, others T < a/b, F <= a/b)
+- TU (others U, F <= a)
+- TT (a > b, others T < a, F <= a)
+
+
+reason clause state transition: (target variable)
 assign new:
-- TF (a = b, others F <= b):
-  - TF (a = b, others F <= b): reason unchanged
+(valid)
+- TF (a = b, others F <= a/b):
+  - TF (a = b, others F <= a/b): reason unchanged
+(invalidated)
+- TF (a = b, others U, F <= a/b):
+  - TF (a = b, others T, U, F): reason invalidated
+- TF (a = b, others T < a/b, F <= a/b):
+  - TF (a = b, others T < a/b, F <= a/b): reason invalidated
+- TU (others U, F <= a):
+  - TF (a <= b, others U, F): maybe valid
+  - TF (a > b, others U, F): normalize
+    - TU (others U, F): reason invalidated
+    - TF (a < b, others F):
+  - TU (others U, F <= b): reason invalidated
+- TT (a > b, others T < b, F <= b):
+  - TT (a > b, others T < b, F <= b): reason invalidated
 
 reassign: (lower level)
-- TF (a = b, others F <= b):
-  - TF (a = b, others F <= b): reason unchanged
+(valid)
+- TF (a = b, others F <= a/b):
+  (target variable)
+  - reason changed
+  (others)
+  - TF (a = b, others F <= a/b): reason unchanged
   - TF (a > b, others F <= a): normalize
-    - TF (a = b, others F <= b): reason unchanged
-    - TF (a > b, others F <= b): reassign, reason unchanged
-  - TF (a = b, others F): reason reassigned, normalize
-    - TF (a = b, others F <= b)
-    - TF (a < b, others F <= b)
-  - TF (a < b, others F <= b): reason reassigned
+    - TF (a = b, others F <= a/b): reason unchanged
+    - TF (a > b, others F <= b): reassign
+      - TF (a = b, others F <= a/b): reason unchanged
+(invalidated)
+
 
 reassign negation: (lower level)
-- TF (a = b, others F <= b):
-  - FF: reason reassigned, normalize
-  - FT: reason reassigned, normalize
-  - TF (a = b, others T < b, F <= b): reason invalidated, unassign
-  - TT: reason invalidated, unassign
+(valid)
+- TF (a = b, others F <= a/b):
+  (target variable)
+  - reason changed
+  (others)
+  - TF (a = b, others T < a/b, F <= a/b): reason invalidated
+  - TT (a > b, others T < a, F <= a): reason invalidated
+(invalidated)
+
 
 unassign:
-- TF (a = b, others F <= b):
-  - UF (others U, F <= b): reason dropped
-  - UU (others U, F <= b): reason dropped
-  - TF (a = b, others U, F <= b): reason invalidated, unassign
-  - TU (others U, F <= b): reason invalidated, unassign
+(valid)
+- TF (a = b, others F <= a/b):
+  (target variable)
+  - reason dropped
+  (others)
+  - TF (a = b, others U, F <= a/b): reason invalidated
+  - TU (others U, F <= a): reason invalidated
+(invalidated)
+
 
 
 - unassigning happens through reason clauses (deleted or invalidated)
-
+- an invalidated reason can happen to become valid again, so unassigning should happen lazily, or just reassigning to higher level without unassigning
 
 - during conflict analysis, reason clauses invalidated can be lazily discovered and dropped
 - actually the assignments with invalid reason clauses can just be regarded as decisions

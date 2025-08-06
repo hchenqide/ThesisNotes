@@ -143,106 +143,159 @@ assign new:
   - FT: normalize
   - UT
   - TT
-- TF (a <= b)
+- TF (a <= b):
   - TF (a <= b)
 - TU:
   - TF (a <= b)
   - TF (a > b): normalize
   - TU
   - TT
-- TT
+- TT:
   - TT
 (normalizing)
-- FF: normalize
+- FF:
+  - FF: normalize
 - FU:
   - FF: normalize
   - FU: normalize
   - FT: normalize
-- FT: normalize
+- FT:
+  - FT: normalize
 - UF:
   - FF: normalize
   - UF: normalize
   - TF (a <= b)
   - TF (a > b): normalize
-- TF (a > b): normalize
-
-reassign: (false branch)
-(static)
-- UU
-- UT
-- TF (a <= b)
-  - TF (a <= b)
-  - TF (a > b): normalize
-- TU
-- TT
-(normalizing)
-- FF: normalize
-- FU: normalize
-- FT: normalize
-- UF: normalize
 - TF (a > b):
-  - TF (a <= b)
   - TF (a > b): normalize
 
-reassign negation: (false branch)
+reassign: (lower level)
 (static)
-- UU
-- UT
-  - UF: normalize
-- TF (a <= b)
-  - FF: normalize
-  - FT: normalize
-  - TT
+- UU:
+  - UU
+- UT:
+  - UT
+- TF (a <= b):
+  - TF (a <= b)
+  - TF (a > b): normalize
 - TU
-  - FU: normalize
+  - TU
 - TT
-  - FF: normalize
-  - FT: normalize
-  - TF: normalize
+  - TT
 (normalizing)
 - FF:
-  - 
-- FU: normalize
-- FT: normalize
-- UF: normalize
+  - FF: normalize
+- FU:
+  - FU: normalize
+- FT:
+  - FT: normalize
+- UF:
+  - UF: normalize
 - TF (a > b):
   - TF (a <= b)
   - TF (a > b): normalize
 
-
-unassign: (both branches)
-- UU
-
-- UT
+reassign negation: (lower level)
+(static)
+- UU:
   - UU
+- UT:
+  - UF: normalize
+  - UT
+- TF (a <= b):
+  - FF: normalize
+  - FT: normalize
+  - TF (a <= b)
+  - TT
+- TU:
+  - FU: normalize
+  - TU
+- TT
+  - FF: normalize
+  - FT: normalize
+  - TF (a <= b)
+  - TF (a > b): normalize
+  - TT
+(normalizing)
+- FF:
+  - FF: normalize
+  - FT: normalize
+  - TF (a <= b)
+  - TF (a > b): normalize
+  - TT
+- FU:
+  - FU: normalize
+  - TU
+- FT:
+  - FF: normalize
+  - FT: normalize
+  - TF (a <= b)
+  - TF (a > b): normalize
+  - TT
+- UF:
+  - UF: normalize
+  - UT
+- TF (a > b):
+  - FF: normalize
+  - FT: normalize
+  - TF (a > b): normalize
+  - TT
 
-- TF (a <= b)
+
+- all normalize cases can be accessed from the false branch of an assignment
+
+
+unassign:
+- UU:
+  - UU
+- UT:
+  - UU
+  - UT
+- TF (a <= b):
   - UF: normalize
   - TF (a <= b)
   - TU
-
-- TU
+- TU:
   - UU
-
-- TT
+  - TU
+- TT:
   - UU
   - UT
   - TU
 
 
-all normalize cases can be accessed from the current false branch of an assignment
+reason clause
+TF (a = b, others F <= b):
+assign new:
+- TF (a = b, others F <= b): still reason
+
+reassign: (lower level)
+- TF (a = b, others F <= b): still reason
+- TF (a > b, others F <= a): normalize
+  - TF (a = b, others F <= b): still reason
+  - TF (a > b, others F <= b): reassign, still reason
+- TF (a = b, others F): not reason, normalize
+  - TF (a = b, others F <= b)
+  - TF (a < b, others F <= b)
+- TF (a < b, others F <= b): not reason
+
+reassign negation: (lower level)
+- FF: not reason, normalize
+- FT: not reason, normalize
+- TF (a = b, others T < b, F <= b): invalid reason, unassign
+- TT: invalid reason, unassign
+
+
+reassign: (higher level)
 
 
 
 
 
-only TF (a = b, others F <= b) can be a reason clause (not necessarily be a reason clause), if it no longer holds even if relaxed, like TF (a <= b, others F <= b), TF (a <= b, others F) or TF (a <= b), it can no longer be the reason clause, which causes a variable to change reason or unassign
+- only TF (a = b, others F <= b) can be a reason clause (not necessarily be a reason clause), if it no longer holds even if relaxed, like TF (a <= b, others F <= b), TF (a <= b, others F) or TF (a <= b), it can no longer be the reason clause, which causes a variable to change reason or unassign
 - in assign/reassign: if new assignment/reassignment happen, the reason clause is set/updated
 - in unassign: the others literals are not watched, so when they become unassigned, the affected reason clauses can't be retrieved, unless with full watching
 - but during conflict analysis, it can be lazily discovered and unassigned, thus even able to resolve a conflict
 - actually the assignments with invalid reason clauses can just be regarded as decisions
 - three decisions on the same level that caused a conflict can cause reassignment on a higher level
 - so all decision can be made on level 0, until there is a conflict then the level of second is increased to propagate the third
-
-
-reassign on higher level

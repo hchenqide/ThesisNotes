@@ -14,29 +14,35 @@ once a variable is assigned, it can never get unassigned
 support unassigning a variable? (deleting a clause)
 
 
-states of unit clause:
-(stable)
-- T
-(unstable)
+clause state:
+[length = 0]
+(propagating)
+- UNSAT
+
+[length = 1] (level a)
+(static)
+- T (a == 0)
+
+(propagating)
 - F: UNSAT
 - U: assign new
+- T (a > 0): reassign
 
-
-states of 2-watching literals: (actual levels a, b)
-(stable)
+[length = 2] (2-watching literals level a, b)
+(static)
 - UU (others T, U, F)
 - UT (others T, U, F)
 - TF (a <= b, others T, U, F)
 - TU (others T, U, F)
 - TT (others T, U, F)
 
-(unstable normalized)
+(propagating)
 - FF/P (a > b, others F <= b): reassign negation
 - FF/C (a = b, others F <= b): analyze, producing learned clause FFP, or UNSAT
 - UF (others F <= b): assign new
 - TF/P (a > b, others F <= b): reassign
 
-normalize:
+(normalizing)
 - FF (others T, U, F):
   (replace two F with T or U)
   - UU
@@ -88,16 +94,17 @@ normalize:
   - TF/P (a > b, others F <= b): reassign
 
 
-adding external clause:
-(length = 0)
-- UNSAT
+adding new clause:
+[length = 0]
+UNSAT
 
-(length = 1)
+[length = 1]
 - F: UNSAT
 - U: assign new
-- T
+- T (a = 0)
+- T (a > 0): reassign
 
-(length >= 2)
+[length >= 2]
 - FF (others T, U, F): normalize
 - FU (others T, U, F): normalize
 - FT (others T, U, F): normalize
@@ -109,8 +116,17 @@ adding external clause:
 - TT
 
 
-in one temporary propagation queue, all assignments/reassignments are on the same level, reassignments are on a lower level than original level
-which to propagate when all exist?
+- in one temporary propagation queue, all assignments/reassignments are on the same level, reassignments are on a lower level than original level
+- which to propagate when all exist?
+- if one variable has multiple propagations, only the one on the least level will remain, and there wouldn't be propagations of variables on the same level with opposite assignments
+- each variable has states: static, enqueued(assign new, reassign, reassign negation), propagating
+- a clause whose both watching variables are static is static, one of them enqueued or propagating is static or normalizing
+- variable states transition:
+  - static -> enqueued (with updated reason clause)
+  - enqueued -> propagating (setting other variables from static to enqueued)
+  - propagating -> static (all watched clauses of this variable are now static)
+- clauses are either static or normalizing
+- when a variable is propagating, a watched normalizing clause will become static, or propagate and immediately become static, the next watched clauses remain normalizing, previous watched clauses can become normalizing but watched by another propagating variable. so a propagating clause wouldn't last
 
 
 assign new: (false branch)

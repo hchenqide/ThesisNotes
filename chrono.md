@@ -1,17 +1,40 @@
 # chronological backtracking
 
-- each variable has its actual level
-- trace is a list of assignments that happened on each decision levels, but each assignment has an actual level
-- repropagate_queue is a list of variables that are reassigned and need to be repropagated
-- decision variables?
+data structures:
+- literal:
+  - variable
+    - assignment (T, U, F)
+  - watching clauses:
+    - (T, U, F) two-watching normal clauses
+    - (F) full-watching reason clauses
 
-- analyze produces a clause that reassigns negation
- trail is no longer needed, no backtracking, only propagation queue for updating assignments
-- level is still needed even though the order is arbitrary, levels can be optimized if no assignments left on this level
-- keep the number of variables on each level
+- variable:
+  - assignment (positive, unassigned, negative)
+  - assignment level
+  - assignment reason:
+    - decision
+    - unit clause
+    - reason clause
+    - *reason clause placeholder
 
-- once a variable is assigned, it can never get unassigned
-- support unassigning a variable? (deleting a clause)
+- level stack:
+  - number of assignments on each level
+  - trailing levels with 0 assignments are deallocated
+
+- propagation queue:
+
+
+
+- if one variable has multiple propagations, only the one on the least level will remain, and there wouldn't be propagations of variables on the same level with opposite assignments
+- each variable has states: static, enqueued(assign new, reassign, reassign negation), propagating
+- a clause whose both watching variables are static is static, one of them enqueued or propagating is static or normalizing
+- variable states transition:
+  - static -> enqueued (with updated reason clause)
+  - enqueued -> propagating (setting other variables from static to enqueued)
+  - propagating -> static (all watched clauses of this variable are now static)
+- clauses are either static or normalizing
+- when a variable is propagating, a watched normalizing clause will become static, or propagate and immediately become static, the next watched clauses remain normalizing, previous watched clauses can become normalizing but watched by another propagating variable. so a propagating clause wouldn't last
+
 
 
 clause state:
@@ -114,23 +137,7 @@ UNSAT
 - TT
 
 
-- in one temporary propagation queue, all assignments/reassignments are on the same level, reassignments are on a lower level than original level
-- which to propagate when all exist?
-- if one variable has multiple propagations, only the one on the least level will remain, and there wouldn't be propagations of variables on the same level with opposite assignments
-- each variable has states: static, enqueued(assign new, reassign, reassign negation), propagating
-- a clause whose both watching variables are static is static, one of them enqueued or propagating is static or normalizing
-- variable states transition:
-  - static -> enqueued (with updated reason clause)
-  - enqueued -> propagating (setting other variables from static to enqueued)
-  - propagating -> static (all watched clauses of this variable are now static)
-- clauses are either static or normalizing
-- when a variable is propagating, a watched normalizing clause will become static, or propagate and immediately become static, the next watched clauses remain normalizing, previous watched clauses can become normalizing but watched by another propagating variable. so a propagating clause wouldn't last
-
-- watching scheme:
-  - 2-watching on normal clauses
-  - full watching on reason clauses
-
-literal:
+watched clauses of a literal state:
 (U)
 - UU
 - TU
@@ -142,7 +149,8 @@ literal:
 - TF (a <= b)
 - TF (a = b, others F <= b, reason)
 
-literal transition:
+
+watched clauses state transition:
 assign new: (k)
 (U)
 - UU:
@@ -187,7 +195,7 @@ reassign: (k)
   - TF (a > b', others F <= b, b' < b, reason): normalize, reassign, reason unchanged
     - TF/P (a > b, others F <= b): reassign (l >= k)
 
-reassign negation: (level k)
+reassign negation: (k)
 (T)
 - TF (a <= b):
   - FF: normalize
@@ -213,13 +221,13 @@ reassign negation: (level k)
 - TF (a <= b):
   - TT
 - TF (a = b, others F <= b, reason):
-  - unassign (from level k), TT watched
+  - unassign (from l >= k), TT watched
 
 unassign: (from k)
 (T)
 - TF (a <= b):
   - UF: normalize
-    - UF (others F <= b): assign new (l = k)
+    - UF (others F <= b): assign new (l >= k)
 - TU
   - UU
 - TT
@@ -230,4 +238,26 @@ unassign: (from k)
 - TF (a <= b)
   - TU
 - TF (a = b, others F <= b, reason)
-  - unassign, TU watched
+  - unassign (from l >= k), TU watched
+
+
+summary:
+assign new: (k)
+- reassign negation (l >= k)
+- analyze (l >= k), reassign negation (l' < l)
+- assign new (l >= k)
+- reassign (l >= k)
+
+reassign: (k)
+- reassign (l >= k)
+
+reassign negation: (k)
+- reassign negation (l >= k)
+- analyze (l >= k), reassign negation (l' < l)
+- assign new (l >= k)
+- reassign (l >= k)
+- unassign (from l >= k)
+
+unassign: (from k)
+- assign new (l >= k)
+- unassign (from l >= k)

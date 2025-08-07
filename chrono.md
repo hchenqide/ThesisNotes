@@ -367,19 +367,18 @@ unassign:
 - unassigning happens through reason clauses (deleted or invalid)
 - an invalid reason can happen to become valid again, so unassigning should happen lazily, or just reassigning to higher level without unassigning
 
-- during conflict analysis, invalid reason clauses are lazily discovered
-- assignments with invalid reason clauses are regarded as decisions
-- multiple decisions can be on the same level. during conflict analysis, number of decisions on the highest level:
-  - 1: reassign negation on a lower level by learnt clause
-  - >= 2: one of them reassign negation on the same level by learnt clause
-- so only one level is enough, just keep reassigning negation?
+- during conflict analysis, invalid reason clauses are lazily discovered and all reasons on the path unassigning
+- but an ungrounded assignment can propagate and cause more assignments, only to be discovered and all unassigned
 
 - an assignment comes from:
   - unit clause
   - reason clause
-  - decision or invalid reason clause
+  - decision
+  - invalid reason clause
 - a normalizing invalid reason clauses during analysis can turn out to be: (this wouldn't change the reason or subsequent valid reasons, and analysis only care about reasons, not levels)
   - valid
   - valid, unchanged after propagation
   - invalid
-- reassign/reassign negation on same/higher level wouldn't cause propagation
+
+- 2-watching on normal clauses
+- full watching on reason clauses

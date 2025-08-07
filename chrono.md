@@ -143,24 +143,33 @@ literal:
 - TF (a = b, others F <= b, reason)
 
 literal transition:
-assign new:
+assign new: (k)
 (U)
 - UU:
   - FF: normalize
+    - FF/P (a > b, others F <= b): reassign negation (l >= k)
+    - FF/C (a = b, others F <= b): analyze (l >= k), reassign negation (l' < l)
+    - UF (others F <= b): assign new (l >= k)
+    - TF/P (a > b, others F <= b): reassign (l >= k)
   - FU: normalize
+    - UF (others F <= b): assign new (l >= k)
   - FT: normalize
+    - TF/P (a > b, others F <= b): reassign (l >= k)
   - UF: normalize
+    - UF (others F <= b): assign new (l >= k)
   - UT
   - TF (a <= b)
   - TF (a > b): normalize
+    - TF/P (a > b, others F <= b): reassign (l >= k)
   - TU
   - TT
 - TU:
   - TF (a <= b)
   - TF (a > b): normalize
+    - TF/P (a > b, others F <= b): reassign (l >= k)
   - TT
 
-reassign:
+reassign: (k)
 (T)
 - TF (a <= b):
   - TF (a <= b)
@@ -172,31 +181,45 @@ reassign:
 - TF (a <= b):
   - TF (a <= b)
   - TF (a > b): normalize
+    - TF/P (a > b, others F <= b): reassign (l >= k)
 - TF (a = b, others F <= b, reason)
   - TF (a = b, others F <= b, reason): reason unchanged
   - TF (a > b', others F <= b, b' < b, reason): normalize, reassign, reason unchanged
+    - TF/P (a > b, others F <= b): reassign (l >= k)
 
-reassign negation:
+reassign negation: (level k)
 (T)
 - TF (a <= b):
   - FF: normalize
+    - FF/P (a > b, others F <= b): reassign negation (l >= k)
+    - FF/C (a = b, others F <= b): analyze (l >= k), reassign negation (l' < l)
+    - UF (others F <= b): assign new (l >= k)
+    - TF/P (a > b, others F <= b): reassign (l >= k)
 - TU:
   - FU: normalize
+    - UF (others F <= b): assign new (l >= k)
 - TT:
   - FF: normalize
+    - FF/P (a > b, others F <= b): reassign negation (l >= k)
+    - FF/C (a = b, others F <= b): analyze (l >= k), reassign negation (l' < l)
+    - UF (others F <= b): assign new (l >= k)
+    - TF/P (a > b, others F <= b): reassign (l >= k)
   - FT: normalize
+    - TF/P (a > b, others F <= b): reassign (l >= k)
   - TF (a <= b)
   - TF (a > b): normalize
+    - TF/P (a > b, others F <= b): reassign (l >= k)
 (F)
 - TF (a <= b):
   - TT
 - TF (a = b, others F <= b, reason):
-  - unassign, TT watched
+  - unassign (from level k), TT watched
 
-unassign:
+unassign: (from k)
 (T)
 - TF (a <= b):
   - UF: normalize
+    - UF (others F <= b): assign new (l = k)
 - TU
   - UU
 - TT
@@ -208,145 +231,3 @@ unassign:
   - TU
 - TF (a = b, others F <= b, reason)
   - unassign, TU watched
-
-
-clause transition:
-assign new:
-[length = 1]
-(static)
-- T
-[length >= 2]
-(static)
-- UU:
-  - FF: normalize
-  - FU: normalize
-  - FT: normalize
-  - UF: normalize
-  - UU
-  - UT
-  - TF (a <= b)
-  - TF (a > b): normalize
-  - TU
-  - TT
-- UT:
-  - FT: normalize
-  - UT
-  - TT
-- TF (a <= b):
-  - TF (a <= b)
-- TU:
-  - TF (a <= b)
-  - TF (a > b): normalize
-  - TU
-  - TT
-- TT:
-  - TT
-(normalizing)
-- FF:
-  - FF: normalize
-- FU:
-  - FF: normalize
-  - FU: normalize
-  - FT: normalize
-- FT:
-  - FT: normalize
-- UF:
-  - FF: normalize
-  - UF: normalize
-  - TF (a <= b)
-  - TF (a > b): normalize
-- TF (a > b):
-  - TF (a > b): normalize
-
-reassign: (lower level)
-(static)
-- UU:
-  - UU
-- UT:
-  - UT
-- TF (a <= b):
-  - TF (a <= b)
-  - TF (a > b): normalize
-- TU
-  - TU
-- TT
-  - TT
-(normalizing)
-- FF:
-  - FF: normalize
-- FU:
-  - FU: normalize
-- FT:
-  - FT: normalize
-- UF:
-  - UF: normalize
-- TF (a > b):
-  - TF (a <= b)
-  - TF (a > b): normalize
-
-reassign negation: (lower level)
-(static)
-- UU:
-  - UU
-- UT:
-  - UF: normalize
-  - UT
-- TF (a <= b):
-  - FF: normalize
-  - FT: normalize
-  - TF (a <= b)
-  - TT
-- TU:
-  - FU: normalize
-  - TU
-- TT
-  - FF: normalize
-  - FT: normalize
-  - TF (a <= b)
-  - TF (a > b): normalize
-  - TT
-(normalizing)
-- FF:
-  - FF: normalize
-  - FT: normalize
-  - TF (a <= b)
-  - TF (a > b): normalize
-  - TT
-- FU:
-  - FU: normalize
-  - TU
-- FT:
-  - FF: normalize
-  - FT: normalize
-  - TF (a <= b)
-  - TF (a > b): normalize
-  - TT
-- UF:
-  - UF: normalize
-  - UT
-- TF (a > b):
-  - FF: normalize
-  - FT: normalize
-  - TF (a > b): normalize
-  - TT
-
-unassign:
-- UU:
-  - UU
-- UT:
-  - UU
-  - UT
-- TF (a <= b):
-  - UF: normalize
-    - UU
-    - TU
-    - UF (others F <= b): assign new
-  - TF (a <= b)
-  - TU
-- TU:
-  - UU
-  - TU
-- TT:
-  - UU
-  - UT
-  - TU

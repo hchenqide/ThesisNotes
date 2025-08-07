@@ -258,6 +258,9 @@ unassign:
   - UT
 - TF (a <= b):
   - UF: normalize
+    - UU
+    - TU
+    - UF (others F <= b): assign new
   - TF (a <= b)
   - TU
 - TU:
@@ -269,116 +272,32 @@ unassign:
   - TU
 
 
-reason clause state:
-(valid)
-- TF (a = b, others F <= a/b) < TF (a <= b)
-(maybe valid)
-- TF (a <= b)
-(invalid)
-- TU
-- TT
+- watching scheme:
+  - 2-watching on normal clauses
+  - full watching on reason clauses
 
+- literal:
+  (U)
+  - clauses in 2-watching (the other T, U)
+  (T)
+  - clauses in 2-watching (the other T, U, F)
+  (F)
+  - clauses in 2-watching (the other T)
+  - reason clauses in full watching
 
-reason clause state transition: (target variable)
-assign new:
-- TF (a = b, others F <= a/b):
-  - TF (a = b, others F <= a/b) -> unchanged
-- TF (a <= b):
-  - TF (a <= b) -> maybe valid
-- TU:
-  - TF (a <= b) -> maybe valid
-  - TF (a > b): normalize
-    - TU: invalid
-    - TT: invalid
-    - TF (a <= b) -> maybe valid
-    - TF/P (a > b, others F <= b): reassign
-      - TF (a = b, others F <= a/b) -> unchanged
-  - TU (others U, F) -> invalid
-- TT:
-  - TT -> invalid
+- variable
+  - positive literal
+  - negative literal
 
-reassign: (lower level)
-- TF (a = b, others F <= a/b):
-  (target variable)
-  -> changed
-  (others)
-  - TF (a = b, others F <= a/b) -> unchanged
-  - TF (a > b, others F <= a): normalize
-    - TF (a = b, others F <= a/b) -> unchanged
-    - TF (a > b, others F <= b): reassign
-      - TF (a = b, others F <= a/b) -> unchanged
-- TF (a <= b):
-  - TF (a <= b) -> maybe valid
-  - TF (a > b): normalize
-    - TU -> invalid
-    - TT -> invalid
-    - TF (a <= b) -> maybe valid
-    - TF/P (a > b, others F <= b): reassign
-      - TF (a = b, others F <= a/b) -> unchanged
-- TU:
-  - TU -> invalid
-- TT:
-  - TT -> invalid
-
-reassign negation: (lower level)
-- TF (a = b, others F <= a/b):
-  - FF -> changed
-  - FT -> changed
-  - TF (a = b, others T < a/b, F <= a/b) < TF (a <= b) -> invalid
-  - TT (a > b, others T < a, F <= a) -> invalid
-- TF (a <= b):
-  - FF -> changed
-  - FT -> changed
-  - TF (a <= b) -> maybe valid
-  - TT -> invalid
-- TU:
-  - FU -> changed
-  - TU: invalid
-- TT
-  - FF -> changed
-  - FT -> changed
-  - TF (a <= b) -> maybe valid
-  - TF (a > b): normalize
-    - TU -> invalid
-    - TT -> invalid
-    - TF (a <= b) -> maybe valid
-    - TF/P (a > b, others F <= b): reassign
-      - TF (a = b, others F <= a/b) -> unchanged
-  - TT -> invalid
-
-unassign:
-- TF (a = b, others F <= a/b):
-  - UF -> dropped
-  - TF (a = b, others U, F <= a/b) < TF (a <= b) -> invalid
-  - TU (others U, F <= a) < TU (others U, F) -> invalid
-- TF (a <= b):
-  - UF -> dropped
-  - TF (a <= b) -> maybe valid
-  - TU -> invalid
-- TU:
-  - UU -> dropped
-  - TU -> invalid
-- TT:
-  - UU -> dropped
-  - UT -> dropped
-  - TU -> invalid
-
-
-- unassigning happens through reason clauses (deleted or invalid)
-- an invalid reason can happen to become valid again, so unassigning should happen lazily, or just reassigning to higher level without unassigning
-
-- during conflict analysis, invalid reason clauses are lazily discovered and all reasons on the path unassigning
-- but an ungrounded assignment can propagate and cause more assignments, only to be discovered and all unassigned
-
-- an assignment comes from:
-  - unit clause
-  - reason clause
-  - decision
-  - invalid reason clause
-- a normalizing invalid reason clauses during analysis can turn out to be: (this wouldn't change the reason or subsequent valid reasons, and analysis only care about reasons, not levels)
-  - valid
-  - valid, unchanged after propagation
-  - invalid
-
-- 2-watching on normal clauses
-- full watching on reason clauses
+- literal transition:
+  (F -> U)
+  - clauses in 2-watching -> TU
+  - reason clauses all unassign -> UU
+  (F -> T)
+  - clauses in 2-watching -> TT
+  - reason clauses all unassign -> TU
+  (U -> F)
+  - clauses in 2-watching
+  (U -> T)
+  (T -> F)
+  (T -> U)

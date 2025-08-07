@@ -24,17 +24,12 @@ data structures:
 - propagation queue:
 
 
-
-- if one variable has multiple propagations, only the one on the least level will remain, and there wouldn't be propagations of variables on the same level with opposite assignments
-- each variable has states: static, enqueued(assign new, reassign, reassign negation), propagating
-- a clause whose both watching variables are static is static, one of them enqueued or propagating is static or normalizing
-- variable states transition:
-  - static -> enqueued (with updated reason clause)
-  - enqueued -> propagating (setting other variables from static to enqueued)
-  - propagating -> static (all watched clauses of this variable are now static)
-- clauses are either static or normalizing
-- when a variable is propagating, a watched normalizing clause will become static, or propagate and immediately become static, the next watched clauses remain normalizing, previous watched clauses can become normalizing but watched by another propagating variable. so a propagating clause wouldn't last
-
+- propagation: propagating clause -> assignment -> normalizing clause -> propagating clause
+- propagation schema:
+  - immediate assignment, delayed normalization:
+    assignment -> (normalizing clause -> propagating clause -> assignment)
+  - delayed assignment, immediate normalization:
+    (assignment -> propagating clause) -> assignment
 
 
 clause state:

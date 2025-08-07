@@ -126,8 +126,91 @@ UNSAT
 - clauses are either static or normalizing
 - when a variable is propagating, a watched normalizing clause will become static, or propagate and immediately become static, the next watched clauses remain normalizing, previous watched clauses can become normalizing but watched by another propagating variable. so a propagating clause wouldn't last
 
+- watching scheme:
+  - 2-watching on normal clauses
+  - full watching on reason clauses
 
-clause state transition:
+literal:
+(U)
+- UU
+- TU
+(T)
+- TF (a <= b)
+- TU
+- TT
+(F)
+- TF (a <= b)
+- TF (a = b, others F <= b, reason)
+
+literal transition:
+assign new:
+(U)
+- UU:
+  - FF: normalize
+  - FU: normalize
+  - FT: normalize
+  - UF: normalize
+  - UT
+  - TF (a <= b)
+  - TF (a > b): normalize
+  - TU
+  - TT
+- TU:
+  - TF (a <= b)
+  - TF (a > b): normalize
+  - TT
+
+reassign:
+(T)
+- TF (a <= b):
+  - TF (a <= b)
+- TU:
+  - TU
+- TT:
+  - TT
+(F)
+- TF (a <= b):
+  - TF (a <= b)
+  - TF (a > b): normalize
+- TF (a = b, others F <= b, reason)
+  - TF (a = b, others F <= b, reason): reason unchanged
+  - TF (a > b', others F <= b, b' < b, reason): normalize, reassign, reason unchanged
+
+reassign negation:
+(T)
+- TF (a <= b):
+  - FF: normalize
+- TU:
+  - FU: normalize
+- TT:
+  - FF: normalize
+  - FT: normalize
+  - TF (a <= b)
+  - TF (a > b): normalize
+(F)
+- TF (a <= b):
+  - TT
+- TF (a = b, others F <= b, reason):
+  - unassign, TT watched
+
+unassign:
+(T)
+- TF (a <= b):
+  - UF: normalize
+- TU
+  - UU
+- TT
+  - UU
+  - UT
+  - TU
+(F)
+- TF (a <= b)
+  - TU
+- TF (a = b, others F <= b, reason)
+  - unassign, TU watched
+
+
+clause transition:
 assign new:
 [length = 1]
 (static)
@@ -247,9 +330,6 @@ reassign negation: (lower level)
   - TF (a > b): normalize
   - TT
 
-- all normalize cases can be accessed from the false branch of an assignment
-
-
 unassign:
 - UU:
   - UU
@@ -270,34 +350,3 @@ unassign:
   - UU
   - UT
   - TU
-
-
-- watching scheme:
-  - 2-watching on normal clauses
-  - full watching on reason clauses
-
-- literal:
-  (U)
-  - clauses in 2-watching (the other T, U)
-  (T)
-  - clauses in 2-watching (the other T, U, F)
-  (F)
-  - clauses in 2-watching (the other T)
-  - reason clauses in full watching
-
-- variable
-  - positive literal
-  - negative literal
-
-- literal transition:
-  (F -> U)
-  - clauses in 2-watching -> TU
-  - reason clauses all unassign -> UU
-  (F -> T)
-  - clauses in 2-watching -> TT
-  - reason clauses all unassign -> TU
-  (U -> F)
-  - clauses in 2-watching
-  (U -> T)
-  (T -> F)
-  (T -> U)

@@ -21,15 +21,22 @@ data structures:
   - number of assignments on each level
   - trailing levels with 0 assignments are deallocated
 
-- propagation queue:
 
-
-- propagation: propagating clause -> assignment -> normalizing clause -> propagating clause
 - propagation schema:
-  - immediate assignment, delayed normalization:
-    assignment -> (normalizing clause -> propagating clause -> assignment)
-  - delayed assignment, immediate normalization:
-    (assignment -> propagating clause) -> assignment
+  - assignment | -> { normalizing clause -> propagating clause -> assignment }
+    (immediate assignment, delayed normalization)
+    (allow other assignments before normalizing clause)
+    (queue of assignments yet to normalize)
+
+  - propagating clause | -> assignment -> { normalizing clause -> propagating clause }
+    (delayed assignment, immediate normalization)
+    (allow other propagations before assignment)
+    (queue of propagations yet to assign)
+    (this might help scheduling propagations)
+    (propagating clauses may be ruined due to new assignments before getting propagated)
+
+  - propagating clause | -> assignment | -> { normalizing clause -> propagating clause }
+    (hybrid)
 
 
 clause state:
@@ -143,6 +150,11 @@ watched clauses of a literal state:
 (F)
 - TF (a <= b)
 - TF (a = b, others F <= b, reason)
+
+- FF/P (a > b, others F <= b): reassign negation (on b)
+- FF/C (a = b, others F <= b): analyze, producing learned clause FF/P, or UNSAT
+- UF (others F <= b): assign new (on b)
+- TF/P (a > b, others F <= b): reassign (on b)
 
 
 watched clauses state transition:

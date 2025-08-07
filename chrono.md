@@ -37,10 +37,16 @@ clause state:
 - TT
 
 (propagating)
-- FF/P (a > b, others F <= b): reassign negation
-- FF/C (a = b, others F <= b): analyze, producing learned clause FFP, or UNSAT
-- UF (others F <= b): assign new
-- TF/P (a > b, others F <= b): reassign
+- FF/P (a > b, others F <= b): reassign negation (on b)
+  - TF (a' = b, others F <= b, a' < a)
+- FF/C (a = b, others F <= b): analyze, producing learned clause FF/P, or UNSAT
+  - FF/P (a' > b', others F <= b', a' = a/b, b' < a/b): reassign negation (on b')
+    - TF (a'' = b', others F <= b', a'' < a')
+  - FF/C (a = b, others F <= b): still conflict pointing to learned clause until propagated, no need to analyze again
+- UF (others F <= b): assign new (on b)
+  - TF (a = b, others F <= b)
+- TF/P (a > b, others F <= b): reassign (on b)
+  - TF (a' = b, others F <= b, a' < a)
 
 (normalizing)
 - FF:
@@ -363,19 +369,17 @@ unassign:
 
 - during conflict analysis, invalid reason clauses are lazily discovered
 - assignments with invalid reason clauses are regarded as decisions
-- multiple decisions can be on the same level. during conflict analysis, decisions on the highest level: (so that learnt clause wouldn't be conflict itself (contains more than 2 falses on the highest level))
-  - one: reassign negation on a lower level by learnt clause
-  - two: one of them reassign negation on the same level by learnt clause
-  - more than two: find another level, either reusing lower levels or allocating higher levels, and put two on the highest level:
-    - use a lower level: others reassign on the lower level, one of the two left reassign negation on the same level
-    - use a higher level: one of the two reassign on the higher level, the other reassign negation on the higher level
+- multiple decisions can be on the same level. during conflict analysis, number of decisions on the highest level:
+  - 1: reassign negation on a lower level by learnt clause
+  - >= 2: one of them reassign negation on the same level by learnt clause
+- so only one level is enough, just keep reassigning negation?
 
-- so all decision can be made on level 0, until there is a conflict then the level of second is increased to propagate the third
-- is it possible to use two levels only?
-
-
-reassign negation: (same level)
-
-reassign: (higher level)
-
-reassign negation: (higher level)
+- an assignment comes from:
+  - unit clause
+  - reason clause
+  - decision or invalid reason clause
+- a normalizing invalid reason clauses during analysis can turn out to be: (this wouldn't change the reason or subsequent valid reasons, and analysis only care about reasons, not levels)
+  - valid
+  - valid, unchanged after propagation
+  - invalid
+- reassign/reassign negation on same/higher level wouldn't cause propagation

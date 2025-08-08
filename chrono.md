@@ -240,20 +240,21 @@ watched clauses state transition with immediate propagation:
     - ...FT (a = k, b >= k)
 
 [assign(k): U -> F(k), reassign(l >= k): F(l' > l) -> F(l)]
-(empty)
+-> [assign(k): U -> F(k)]
 
 [assign(k): U -> F(k), reassign(l >= k): T(l' > l) -> T(l)]
 - FT (a = k, b > k) ->
   - FT (a = k, b >= k): normalize
     - TF/P (a > b', others F <= b', b' >= k): reassign(b' >= k)
-
+      [assign(k): U -> F(k), reassign(l >= k): T(l' > l) -> T(l), reassign(l' >= k): F(l'' > l') -> F(l')]
+      [assign(k): U -> F(k), reassign(l >= k): T(l' > l) -> T(l), reassign(l' >= k): T(l'' > l') -> T(l')]
 - TF (a > k, b = k) ->
   - TF (a >= k, b = k): normalize
     - ...FT (a = k, b >= k)
 
-[assign(k): U -> F(k), assign(l >= k): U -> F(l), backtrack(>= k)]
+[assign(k): U -> F(k), assign(l >= k): U -> F(l), backtrack(>= k), assign(l' >= k)]
 
-[assign(k): U -> F(k), assign(l >= k): U -> F(l), backtrack(>= k - 1)]
+[assign(k): U -> F(k), assign(l >= k): U -> F(l), backtrack(>= k - 1), assign(l')]
 
 [assign(k): U -> F(k), assign(l >= k): U -> F(l), assign(l' >= k): U -> F(l')]
 -> [assign(k): U -> F(k), assign(l >= k): U -> F(l)]
@@ -262,26 +263,81 @@ watched clauses state transition with immediate propagation:
 -> [assign(k): U -> F(k), assign(l >= k): U -> T(l)]
 
 [assign(k): U -> F(k), assign(l >= k): U -> F(l), reassign(l' >= k): F(l'' > l') -> F(l')]
-- FF (a = k, b >= k) ->
-  - FF (a = k, b >= k): normalize
-- FF (a >= k, b = k) ->
-  - FF (a >= k, b = k): normalize
+-> [assign(k): U -> F(k), assign(l >= k): U -> F(l)]
 
 [assign(k): U -> F(k), assign(l >= k): U -> F(l), reassign(l' >= k): T(l'' > l') -> T(l')]
 -> [assign(k): U -> F(k), reassign(l >= k): T(l' > l) -> T(l)]
 
 [assign(k): U -> F(k), assign(l >= k): U -> T(l), reassign(l' >= k): F(l'' > l') -> F(l')]
+-> [assign(k): U -> F(k), assign(l >= k): U -> T(l)]
 
 [assign(k): U -> F(k), assign(l >= k): U -> T(l), reassign(l' >= k): T(l'' > l') -> T(l')]
+-> [assign(k): U -> F(k), assign(l >= k): U -> T(l)]
+
+[assign(k): U -> F(k), reassign(l >= k): T(l' > l) -> T(l), reassign(l' >= k): F(l'' > l') -> F(l')]
+-> [assign(k): U -> F(k), reassign(l >= k): T(l' > l) -> T(l)]
+
+[assign(k): U -> F(k), reassign(l >= k): T(l' > l) -> T(l), reassign(l' >= k): T(l'' > l') -> T(l')]
+-> [assign(k): U -> F(k), reassign(l >= k): T(l' > l) -> T(l)]
+
+
+[reassign(k): F(l > k) -> F(k)]
+- TF (a <= l)
+  - TF (a <= k)
+  - TF (a > k): normalize
+    - TF (a > b, others F <= b, b >= k): reassign(b >= k)
+      [reassign(k): F(l > k) -> F(k), reassign(l >= k): F(l' > l) -> F(l)]
+      [reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l)]
+
+[reassign(k): F(l > k) -> F(k), reassign(l >= k): F(l' > l) -> F(l)]
+(empty)
+
+[reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l)]
+- TF (a > k)
+  - TF (l = k)
+  - TF (l > k): normalize
+    - TF (a > b, others F <= b, b >= k): reassign(b >= k)
+      [reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l), reassign(l' >= k): F(l'' > l') -> F(l')]
+      [reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l), reassign(l' >= k): T(l'' > l') -> T(l')]
+
+[reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l), reassign(l' >= k): F(l'' > l') -> F(l')]
+(empty)
+
+[reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l), reassign(l' >= k): T(l'' > l') -> T(l')]
+-> [reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l)]
 
 
 summary:
 - assign(k):
-  - assign(>= k)
-    - exit(UNSAT)
+  (F)
+  - assign(>= k):
+    (F)
     - backtrack(>= k), assign(>= k)
+      - ...
+    - exit(UNSAT)
     - backtrack(>= k - 1), assign(<=> k)
+      - ...
     - assign(>= k)
+      (F)
+      -> assign(k) F, assign(>= k) F
+      (T)
+      -> assign(k) F, assign(>= k) T
     - reassign(>= k)
+      (F)
+      -> assign(k) F, assign(>= k) F
+      (T)
+      -> assign(k) F, reassign(>= k) T
+    (T)
+    - reassign(>= k)
+      (F)
+      -> assign(k) F, assign(>= k) T
+      (T)
+      -> assign(k) F, assign(>= k) T
   - reassign(>= k)
+    (F)
+    (T)
     - reassign(>= k)
+
+- reassign(k)
+  - reassign(>= k)
+    -> reassign(k), reassign(>= k)

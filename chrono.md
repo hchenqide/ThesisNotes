@@ -2,10 +2,11 @@
 
 design choices and implications:
 - reason clause and unassigning: (reason clauses can become invalid when reassigning negation or unassigning, triggering further unassigning)
-  - full unassigning: (assigning in levels and backtracking)
+ x- full unassigning: (assigning in levels and backtracking)
     > backtrack to one level before the literal's original level and unassign all, so the literal's impact all cleared
     > but unassignment might be excessive
-    > but actually only the highest one level unassigned when reassigning negation from conflict analysis, and all propagations on the highest level are due to the assignment now reverted
+    > only the highest one level unassigned when reassigning negation from conflict analysis, and all propagations on the highest level are due to the assignment, which is now reverted
+    > unassigning or adding new clause can still cause multi-level backtracking and excessive unassignment
   - eager unassigning:
     > reason clauses watched by all false literals, when one becomes true or unassigned, the propagated literal unassigns
     > when a reason clause is unassigned, it also needs to be unwatched from other false literals, so that when it becomes reason again, it won't be watched twice
@@ -18,11 +19,8 @@ design choices and implications:
 
 data structures:
 - literal:
-  - variable
-    - assignment (T, U, F)
-  - watching clauses:
-    - (T, U, F) two-watching normal clauses
-    - (F) full-watching reason clauses
+  - assignment (T, U, F)
+  - watching clauses
 
 - variable:
   - assignment (positive, unassigned, negative)
@@ -32,11 +30,6 @@ data structures:
     - unit clause
     - reason clause
     - *reason clause placeholder
-
-- level stack:
-  - number of assignments on each level
-  - trailing levels with 0 assignments are deallocated
-
 
 - propagation schema:
   - assignment | -> { normalizing clause -> propagating clause -> assignment }
@@ -58,16 +51,15 @@ data structures:
 clause state:
 [length = 0]
 (propagating)
-- UNSAT
+- exit(UNSAT)
 
 [length = 1] (level a)
 (static)
 - T (a == 0)
-
 (propagating)
-- F: UNSAT
-- U: assign new
-- T (a > 0): reassign
+- F: exit(UNSAT)
+- U: assign(0)
+- T (a > 0): reassign(0)
 
 [length = 2] (2-watching literals level a, b)
 (static)
@@ -76,19 +68,20 @@ clause state:
 - TF (a <= b)
 - TU
 - TT
-
 (propagating)
-- FF/P (a > b, others F <= b): reassign negation (on b)
-  - TF (a' = b, others F <= b, a' < a)
-- FF/C (a = b, others F <= b): analyze, producing learned clause FF/P, or UNSAT
-  - FF/P (a' > b', others F <= b', a' = a/b, b' < a/b): reassign negation (on b')
-    - TF (a'' = b', others F <= b', a'' < a')
-  - FF/C (a = b, others F <= b): still conflict pointing to learned clause until propagated, no need to analyze again
-- UF (others F <= b): assign new (on b)
+- FF/P (a > b, others F <= b): backtrack(a - 1), assign(b)
+  - TF (a' = b, others F <= b)
+- FF/C (a = b, others F <= b):
+  - (a/b = 0): exit(UNSAT)
+  - (a/b > 0): analyze, producing learned clause
+    - FF/P (a > b', others F <= b'): backtrack(a - 1), assign(b')
+      - TF (a' = b', others F <= b')
+    - FF/C (a = b, others F <= b):
+      - UU
+- UF (others F <= b): assign(b)
   - TF (a = b, others F <= b)
-- TF/P (a > b, others F <= b): reassign (on b)
-  - TF (a' = b, others F <= b, a' < a)
-
+- TF/P (a > b, others F <= b): reassign(b)
+  - TF (a' = b, others F <= b)
 (normalizing)
 - FF:
   (replace two F with T or U)
@@ -97,31 +90,29 @@ clause state:
   - TU
   - TT
   (replace one F with U, replace one F with F in max level)
-  - UF (others F <= b): assign new
+  - UF (others F <= b): assign(b)
   (replace one F with T, replace one F with F >= a)
   - TF (a <= b, others F) as TF (a <= b)
   (replace one F with T, replace one F with F in max level)
-  - TF/P (a > b, others F <= b): reassign
+  - TF/P (a > b, others F <= b): reassign(b)
   (replace two F in max level)
-  - FF/P (a > b, others F <= b): reassign negation
-  - FF/C (a = b, others F <= b): analyze
-
+  - FF/P (a > b, others F <= b): backtrack(a - 1), assign(b)
+  - FF/C (a = b, others F <= b):
+    - (a/b = 0): exit(UNSAT)
+    - (a/b > 0): analyze
 - FU:
   (swap)
   - UF: normalize
-
 - FT:
   (swap)
   - TF (a <= b)
   - TF (a > b): normalize
-
 - UF:
   (replace F with T or U)
   - UU
   - TU
   (replace F with F in max level)
-  - UF (others F <= b): assign new
-
+  - UF (others F <= b): assign(b)
 - TF (a > b):
   (replace F with T or U)
   - TU
@@ -129,18 +120,18 @@ clause state:
   (replace F with F >= a)
   - TF (a <= b, others F) as TF (a <= b)
   (replace F with F in max level)
-  - TF/P (a > b, others F <= b): reassign
+  - TF/P (a > b, others F <= b): reassign(b)
 
 
 adding new clause:
 [length = 0]
-UNSAT
+- exit(UNSAT)
 
 [length = 1]
-- F: UNSAT
-- U: assign new
+- F: exit(UNSAT)
+- U: assign(0)
 - T (a = 0)
-- T (a > 0): reassign
+- T (a > 0): reassign(0)
 
 [length >= 2]
 - FF: normalize
@@ -159,7 +150,6 @@ watched clauses of a literal (T, U, F) state:
 (static)
 (F)
 - TF (a <= b)
-- TF (a = b, others F <= b, reason)
 (U)
 - UU
 - UT
@@ -185,7 +175,7 @@ watched clauses of a literal (T, U, F) state:
 
 
 watched clauses state transition:
-assign new: (k)
+assign(k):
 (U -> F)
 - UU ->
   - FU: normalize
@@ -225,7 +215,7 @@ assign new: (k)
     - TF/P (a > b, others F <= b): reassign (l >= k)
   - TT
 
-reassign: (k)
+reassign(k):
 (T)
 - TF (a <= b):
   - TF (a <= b)
@@ -243,76 +233,6 @@ reassign: (k)
   - TF (a > b', others F <= b, b' < b, reason): normalize, reassign, reason unchanged
     - TF/P (a > b, others F <= b): reassign (l >= k)
 
-reassign negation: (k)
-(T)
-- TF (a <= b):
-  - FF: normalize
-    - FF/P (a > b, others F <= b): reassign negation (l >= k)
-    - FF/C (a = b, others F <= b): analyze (l >= k), reassign negation (l' < l)
-    - UF (others F <= b): assign new (l >= k)
-    - TF/P (a > b, others F <= b): reassign (l >= k)
-- TU:
-  - FU: normalize
-    - UF (others F <= b): assign new (l >= k)
-- TT:
-  - FF: normalize
-    - FF/P (a > b, others F <= b): reassign negation (l >= k)
-    - FF/C (a = b, others F <= b): analyze (l >= k), reassign negation (l' < l)
-    - UF (others F <= b): assign new (l >= k)
-    - TF/P (a > b, others F <= b): reassign (l >= k)
-  - FT: normalize
-    - TF/P (a > b, others F <= b): reassign (l >= k)
-  - TF (a <= b)
-  - TF (a > b): normalize
-    - TF/P (a > b, others F <= b): reassign (l >= k)
-(F)
-- TF (a <= b):
-  - TT
-- TF (a = b, others F <= b, reason):
-  - unassign (from l >= k), TT watched
-
-unassign: (from k)
-(T)
-- TF (a <= b):
-  - UF: normalize
-    - UF (others F <= b): assign new (l >= k)
-- TU
-  - UU
-- TT
-  - UU
-  - UT
-  - TU
-(F)
-- TF (a <= b)
-  - TU
-- TF (a = b, others F <= b, reason)
-  - unassign (from l >= k), TU watched
+backtrack(k):
 
 
-summary:
-assign new: (k)
-- reassign negation (l >= k)
-- analyze (l >= k), reassign negation (l' < l)
-- assign new (l >= k)
-- reassign (l >= k)
-
-reassign: (k)
-- reassign (l >= k)
-
-reassign negation: (k)
-- reassign negation (l >= k)
-- analyze (l >= k), reassign negation (l' < l)
-- assign new (l >= k)
-- reassign (l >= k)
-- unassign (from l >= k)
-
-unassign: (from k)
-- assign new (l >= k)
-- unassign (from l >= k)
-
-
-unassign stack/queue
-
-propagation queue:
-
-normalization queue:

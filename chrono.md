@@ -174,30 +174,72 @@ watched clauses of a literal (T, U, F) state:
 - TF (a > b)
 
 
-watched clauses state transition:
-assign(k):
-(U -> F)
+watched clauses state transition with immediate propagation:
+assign(k): U -> F(k)
 - UU ->
-  - FU: normalize
-    - UF (others F <= b): assign new (l >= k)
-  - UF: normalize
-    - UF (others F <= b): assign new (l >= k)
+  - FU (a = k): normalize
+    - UF (others F <= b', b' >= k): assign(b' >= k)
+  - UF (b = k): normalize
+    - UF (others F <= b', b' >= k): assign(b' >= k)
 - UT ->
-  - FT: normalize
-    - TF/P (a > b, others F <= b): reassign (l >= k)
+  - FT (a = k): normalize
+    - TF/P (a > b', others F <= b', b' >= k): reassign(b' >= k)
 - TU ->
-  - TF (a <= b)
-  - TF (a > b): normalize
-    - TF/P (a > b, others F <= b): reassign (l >= k)
-- FU ->
-  -
+  - TF (a <= b, b = k)
+  - TF (a > b, b = k): normalize
+    - TF/P (a > b', others F <= b', b' >= k): reassign(b' >= k)
+
+[assign(k): U -> F(k), assign(l >= k): U -> F(l)]
+- FU (a = k) ->
+  - FF (a = k, b >= k): normalize
+    - FF/P (a' > b', others F <= b', b' >= k): backtrack(a' - 1 >= k), assign(b' >= k)
+    - FF/C (a' = b', others F <= b', b' >= k):
+      - exit(UNSAT)
+      - analyze, producing learned clause
+        - FF/P (a' > b'', others F <= b''): backtrack(a' - 1 >= k - 1), assign(b'')
+    - UF (others F <= b', b' >= k): assign(b' >= k)
+    - TF/P (a > b', others F <= b', b' >= k): reassign (b' >= k)
+- UF (b = k) ->
+  - FF (a >= k, b = k): normalize
+    - ...FF (a = k, b >= k)
+
+[assign(k): U -> F(k), assign(l >= k): U -> T(l)]
+- FU (a = k) ->
+  - FT (a = k, b >= k): normalize
+    - TF (a' > b', others F <= b', b' >= k): reassign(b' >= k)
+- UF (b = k) ->
+  - TF (a >= k, b = k): normalize
+    - ...FT (a = k, b >= k)
+
+[assign(k): U -> F(k), reassign(l >= k): F(l') -> F(l) (l < l')]
+- FF (a = k, b > k) ->
+  - FF (a = k, b >= k): normalize
+    - ...FF (a = k, b >= k)
+- FF (a > k, b = k) ->
+  - FF (a >= k, b = k): normalize
+    - ...FF (a = k, b >= k)
+
+[assign(k): U -> F(k), reassign(l >= k): T(l') -> T(l) (l < l')]
+- FT (a = k, b > k) ->
+  - FT (a = k, b >= k): normalize
+    - TF/P (a > b', others F <= b', b' >= k): reassign(b' >= k)
+
+
+summary:
+assign(k):
+- assign(>= k)
+  - exit(UNSAT)
+  - backtrack(>= k), assign(>= k)
+  - backtrack(>= k - 1), assign
+  - assign(>= k)
+  - reassign(>= k)
+- reassign(l >= k)
+  
+
+
 
 - UU:
   - FF: normalize
-    - FF/P (a > b, others F <= b): reassign negation (l >= k)
-    - FF/C (a = b, others F <= b): analyze (l >= k), reassign negation (l' < l)
-    - UF (others F <= b): assign new (l >= k)
-    - TF/P (a > b, others F <= b): reassign (l >= k)
   - FU: normalize
   - FT: normalize
     - TF/P (a > b, others F <= b): reassign (l >= k)
@@ -215,7 +257,12 @@ assign(k):
     - TF/P (a > b, others F <= b): reassign (l >= k)
   - TT
 
-reassign(k):
+
+reassign(k): F(l) -> F(k) (k < l)
+
+
+
+
 (T)
 - TF (a <= b):
   - TF (a <= b)
@@ -232,6 +279,7 @@ reassign(k):
   - TF (a = b, others F <= b, reason): reason unchanged
   - TF (a > b', others F <= b, b' < b, reason): normalize, reassign, reason unchanged
     - TF/P (a > b, others F <= b): reassign (l >= k)
+
 
 backtrack(k):
 

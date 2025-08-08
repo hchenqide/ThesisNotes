@@ -16,21 +16,6 @@ design choices and implications:
     > an invalid reason clause can become valid again thus no need to unassign yet
     > analysis search stops at invalid reason clauses, unassigns all on the path, but still produces a learnt clause
 
-
-data structures:
-- literal:
-  - assignment (T, U, F)
-  - watching clauses
-
-- variable:
-  - assignment (positive, unassigned, negative)
-  - assignment level
-  - assignment reason:
-    - decision
-    - unit clause
-    - reason clause
-    - *reason clause placeholder
-
 - propagation schema:
   - assignment | -> { normalizing clause -> propagating clause -> assignment }
     (immediate assignment, delayed normalization)
@@ -46,6 +31,28 @@ data structures:
 
   - propagating clause | -> assignment | -> { normalizing clause -> propagating clause }
     (hybrid)
+
+
+data structures:
+- literal:
+  - assignment (T, U, F)
+  - watching clauses
+
+- variable:
+  - assignment (positive, unassigned, negative)
+  - assignment level
+  - assignment reason:
+    - decision
+    - unit clause
+    - reason clause
+    - *reason clause placeholder
+
+- assignment trail: 
+  - before level index k: assignments in level < k
+  - backtracking to k - 1: assignments in level < k shifted, assignments in level >= k unassigned
+
+control flow:
+- 
 
 
 clause state:
@@ -213,12 +220,12 @@ watched clauses state transition with immediate propagation:
 - FU (a = k) ->
   - FF (a = k, b >= k): normalize
     - FF/P (a' > b', others F <= b', b' >= k): backtrack(a' - 1 >= k), assign(b' >= k)
-      [assign(k): U -> F(k), assign(l >= k): U -> F(l), backtrack(>= k)]
+      [assign(k): U -> F(k), assign(l >= k): U -> F(l), backtrack(>= k), assign(l' >= k)]
     - FF/C (a' = b', others F <= b', b' >= k):
       - exit(UNSAT)
       - analyze, producing learned clause
         - FF/P (a' > b'', others F <= b''): backtrack(a' - 1 >= k - 1), assign(b'')
-          [assign(k): U -> F(k), assign(l >= k): U -> F(l), backtrack(>= k - 1)]
+          [assign(k): U -> F(k), assign(l >= k): U -> F(l), backtrack(>= k - 1), assign(l')]
     - UF (others F <= b', b' >= k): assign(b' >= k)
       [assign(k): U -> F(k), assign(l >= k): U -> F(l), assign(l' >= k): U -> F(l')]
       [assign(k): U -> F(k), assign(l >= k): U -> F(l), assign(l' >= k): U -> T(l')]
@@ -254,7 +261,9 @@ watched clauses state transition with immediate propagation:
 
 [assign(k): U -> F(k), assign(l >= k): U -> F(l), backtrack(>= k), assign(l' >= k)]
 
+
 [assign(k): U -> F(k), assign(l >= k): U -> F(l), backtrack(>= k - 1), assign(l')]
+
 
 [assign(k): U -> F(k), assign(l >= k): U -> F(l), assign(l' >= k): U -> F(l')]
 -> [assign(k): U -> F(k), assign(l >= k): U -> F(l)]
@@ -290,7 +299,7 @@ watched clauses state transition with immediate propagation:
       [reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l)]
 
 [reassign(k): F(l > k) -> F(k), reassign(l >= k): F(l' > l) -> F(l)]
-(empty)
+-> [reassign(k): F(l > k) -> F(k)]
 
 [reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l)]
 - TF (a > k)
@@ -301,43 +310,45 @@ watched clauses state transition with immediate propagation:
       [reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l), reassign(l' >= k): T(l'' > l') -> T(l')]
 
 [reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l), reassign(l' >= k): F(l'' > l') -> F(l')]
-(empty)
+-> [reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l)]
 
 [reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l), reassign(l' >= k): T(l'' > l') -> T(l')]
 -> [reassign(k): F(l > k) -> F(k), reassign(l >= k): T(l' > l) -> T(l)]
 
 
 summary:
-- assign(k):
-  (F)
-  - assign(>= k):
-    (F)
-    - backtrack(>= k), assign(>= k)
+- assign(k) F:
+  - assign(>= k) F:
+    - backtrack(>= k), assign(>= k):
       - ...
     - exit(UNSAT)
-    - backtrack(>= k - 1), assign(<=> k)
+    - backtrack(>= k - 1), assign(<=> k):
       - ...
-    - assign(>= k)
-      (F)
-      -> assign(k) F, assign(>= k) F
-      (T)
-      -> assign(k) F, assign(>= k) T
-    - reassign(>= k)
-      (F)
-      -> assign(k) F, assign(>= k) F
-      (T)
-      -> assign(k) F, reassign(>= k) T
-    (T)
-    - reassign(>= k)
-      (F)
-      -> assign(k) F, assign(>= k) T
-      (T)
-      -> assign(k) F, assign(>= k) T
-  - reassign(>= k)
-    (F)
-    (T)
-    - reassign(>= k)
-
-- reassign(k)
-  - reassign(>= k)
-    -> reassign(k), reassign(>= k)
+    - assign(>= k) F:
+        -> assign(k) F, assign(>= k) F
+      assign(>= k) T:
+        -> assign(k) F, assign(>= k) T
+    - reassign(>= k) F:
+        -> assign(k) F, assign(>= k) F
+      reassign(>= k) T:
+        -> assign(k) F, reassign(>= k) T
+    assign(>= k) T:
+    - reassign(>= k) F:
+        -> assign(k) F, assign(>= k) T
+      reassign(>= k) T:
+        -> assign(k) F, assign(>= k) T
+  - reassign(>= k) F:
+      -> assign(k) F
+    reassign(>= k) T:
+    - reassign(>= k) F:
+        -> assign(k) F, reassign(>= k) T
+      reassign(>= k) T:
+        -> assign(k) F, reassign(>= k) T
+- reassign(k) F:
+  - reassign(>= k) F:
+      -> reassign(k) F
+    reassign(>= k) T:
+    - reassign(>= k) F:
+        -> reassign(k) F, reassign(>= k) T
+      reassign(>= k) T:
+        -> reassign(k) F, reassign(>= k) T

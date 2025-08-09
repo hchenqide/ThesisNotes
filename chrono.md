@@ -2,22 +2,24 @@
 
 design choices and implications:
 - reason clause and unassigning: (reason clauses can become invalid when reassigning negation or unassigning, triggering further unassigning)
- x- full unassigning: (assigning in levels and backtracking)
+  - ✅ full unassigning: (assigning in levels and backtracking)
     > backtrack to one level before the literal's original level and unassign all, so the literal's impact all cleared
     > but unassignment might be excessive
     > only the highest one level unassigned when reassigning negation from conflict analysis, and all propagations on the highest level are due to the assignment, which is now reverted
     > unassigning or adding new clause can still cause multi-level backtracking and excessive unassignment
+
   - eager unassigning:
     > reason clauses watched by all false literals, when one becomes true or unassigned, the propagated literal unassigns
     > when a reason clause is unassigned, it also needs to be unwatched from other false literals, so that when it becomes reason again, it won't be watched twice
       - reason clauses kept in a set for each false literal
       - reason clauses keeping a flag for each literal whether they are currently watching
+
   - lazy unassigning:
     > an invalid reason clause can become valid again thus no need to unassign yet
     > analysis search stops at invalid reason clauses, unassigns all on the path, but still produces a learnt clause
 
 - propagation schema:
-  - assignment | -> { normalizing clause -> propagating clause -> assignment }
+  - ✅ assignment | -> { normalizing clause -> propagating clause -> assignment }
     (immediate assignment, delayed normalization)
     (allow other assignments before normalizing clause)
     (queue of assignments yet to normalize)
@@ -45,7 +47,7 @@ data structures:
     - decision
     - unit clause
     - reason clause
-    - *reason clause placeholder
+    - reason clause placeholder
 
 - assignment trail: (just for unassigning when backtracking)
   - assignments before level index k: in level < k
@@ -53,30 +55,54 @@ data structures:
   - backtracking to k - 1: assignments in level < k shifted, assignments in level >= k unassigned
 
 - propagation queue: (normalization of clauses of newly assigned/reassigned variable)
-  - { level, assign|reassign, variable} heap
-  - low level, assign propagates first
-  - new assign/reassign during propagation (level >= current propagating level) added to the queue
-  - during propagation of a variable itself, it can't be assigned or reassigned again unless backtracking
-  - during propagation of other variables, a variable assigned/reassigned can be reassigned on a lower level
-  - reassigning in lower levels propagates first, higher or equal level skipped
-  - higher level items lazily removed after backtracking
+  - { level, variable: { level } } heap with lowest level in the front:
+    - take front variable out to propagate
+    - skip variable level not matching (invalid due to reassigning/backtracking)
+  - normalize each watched clause of current variable with { level, variable: { level } }:
+    - change watching literals
+    - add new assign/reassign (current propagating level <= assignment level < next decision level) to the queue:
+      - current variable itself can't be assigned or reassigned unless analysis
+      - others variable reassigned existing item in propagation queue invalidates
+    - when analysis involved:
+      - filling reason clause can cause reassigning self
+      - adding learnt clause can cause unassigning and assigning self again
+      - both lead to level unmatching after current normalization and break from current variable
+  - existing variables in the queue:
+    - unassigned after backtracking, level >= next decision level, variable.level undefined or variable.level < level
+    - reassigned with lower level, variable.level < level
+
 
 control flow:
 - adding a list of new clauses cause:
   - each new clause immediately normalized and watched, possibly assigning/reassigning/UNSAT/backtracking/analysis
   - analysis adds a learnt clause, backtracking first unassigning the previous conflict clause, and assigning negation
   - assignments propagate in order after all clauses are added
-
-- propagation:
   - new clauses can be added any time, also during propagation
-  - a new clause that causes backtracking to lower than current propagation will break current propagation
 
 - atomic operations:
   - normalization of a clause, and:
-    - assigning/reassigning, pushed to propagation queue
+    - assigning/reassigning, pushing to propagation queue
     - exiting with UNSAT
-    - backtracking, unassigning trail and propagation queue
-    - analysis, possibly reassigning and pushed to propagation queue, adding learnt clause (-> backtracking)
+    - backtracking, unassigning trail and assigning
+    - analysis, possibly reassigning and pushing to propagation queue, adding learnt clause (-> backtracking)
+  - assigning a decision variable, increasing next decision level, and pushing to propagation queue
+  - assigning an arbitrary variable with current level and reason clause placeholder, pushing to propagation queue
+
+- searching loop:
+  > normalize:
+    - assign
+    - reassign
+    - backtrack and assign
+    - analyze and add learned clause
+      > reassign
+      > backtrack and assign
+  > propagate:
+    > normalize
+  > has clauses:
+    - add clauses
+      > normalize
+    - decide
+      - propagate
 
 
 clause state:

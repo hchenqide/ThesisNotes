@@ -51,8 +51,30 @@ data structures:
   - before level index k: assignments in level < k
   - backtracking to k - 1: assignments in level < k shifted, assignments in level >= k unassigned
 
+- propagation queue: (normalization of clauses of newly assigned/reassigned variable)
+  - reassign(i)... assgin(i)...
+  - low level propagates first
+  - the same level, reassign propagates first
+  - new propagations during propagation added to the queue
+  - trimmed after backtracking
+
+
 control flow:
-- 
+- adding a list of new clauses cause:
+  - each new clause immediately normalized and watched, possibly assigning/reassigning/UNSAT/backtracking/analysis
+  - analysis adds a learnt clause, backtracking first unassigning the previous conflict clause, and assigning negation
+  - assignments propagate in order after all clauses are added
+
+- propagation:
+  - new clauses can be added any time, also during propagation
+  - a new clause that causes backtracking to lower than current propagation will break current propagation
+
+- atomic operations:
+  - normalization of a clause, and:
+    - assigning/reassigning, pushed to propagation queue
+    - exiting with UNSAT
+    - backtracking, unassigning trail and propagation queue
+    - analysis, possibly reassigning and pushed to propagation queue, adding learnt clause (-> backtracking)
 
 
 clause state:

@@ -47,17 +47,19 @@ data structures:
     - reason clause
     - *reason clause placeholder
 
-- assignment trail: 
-  - before level index k: assignments in level < k
+- assignment trail: (just for unassigning when backtracking)
+  - assignments before level index k: in level < k
+  - new assignments: pushed back to the trail in any level
   - backtracking to k - 1: assignments in level < k shifted, assignments in level >= k unassigned
 
 - propagation queue: (normalization of clauses of newly assigned/reassigned variable)
-  - reassign(i)... assgin(i)...
-  - low level propagates first
-  - the same level, reassign propagates first
-  - new propagations during propagation added to the queue
-  - trimmed after backtracking
-
+  - { level, assign|reassign, variable} heap
+  - low level, assign propagates first
+  - new assign/reassign during propagation (level >= current propagating level) added to the queue
+  - during propagation of a variable itself, it can't be assigned or reassigned again unless backtracking
+  - during propagation of other variables, a variable assigned/reassigned can be reassigned on a lower level
+  - reassigning in lower levels propagates first, higher or equal level skipped
+  - higher level items lazily removed after backtracking
 
 control flow:
 - adding a list of new clauses cause:

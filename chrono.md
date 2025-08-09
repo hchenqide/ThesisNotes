@@ -88,21 +88,50 @@ control flow:
   - assigning a decision variable, increasing next decision level, and pushing to propagation queue
   - assigning an arbitrary variable with current level and reason clause placeholder, pushing to propagation queue
 
-- searching loop:
-  > normalize:
-    - assign
-    - reassign
-    - backtrack and assign
-    - analyze and add learned clause
-      > reassign
-      > backtrack and assign
+- procedure:
+  > solve:
+    > propagate
+  > normalize(clause):
+    - skip
+    - assign(level, literal)
+    - reassign(level, variable)
+    - exit(UNSAT)
+    - backtrack(level), assign(level, literal)
+    - analyze:
+      > reassign(level, variable)
+      > add(learnt):
+        > backtrack(level), assign(level, literal)
+  > add(clause):
+    - empty
+      - exit(UNSAT)
+    - unit:
+      - exit(UNSAT)
+      - assign(level, literal)
+      - reassign(level, variable)
+    - more than two:
+      - skip
+      - normalize(clause)
   > propagate:
-    > normalize
-  > has clauses:
-    - add clauses
-      > normalize
-    - decide
-      - propagate
+    - get_next_variable
+      - propagate_variable(level, variable)
+        > watched_clauses: (loop)
+          - skip
+          - normalize(clause):
+            - continue
+              - unfilter
+              - filter
+            - break
+      - get_new
+  > get_new:
+    - user:
+      - assignment: (loop)
+        > assign(level, literal)
+      - clauses: (loop)
+        > add(clause)
+      > propagate
+    - decide:
+      > assign(level, literal)
+      > propagate
 
 
 clause state:

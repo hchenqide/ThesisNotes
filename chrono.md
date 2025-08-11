@@ -64,9 +64,10 @@ data structures:
       - current variable itself can't be assigned or reassigned unless analysis
       - others variable reassigned existing item in propagation queue invalidates
     - when analysis involved:
-      - filling reason clause can cause reassigning self
+      - filling reason clause can cause reassigning self or reassigning a variable as analyze level reason
       - adding learnt clause can cause unassigning and assigning self again
       - both lead to level unmatching after current normalization and break from current variable
+      - analysis is left to the variable at the analysis level to perfrom, after all propagations before this level, to avoid unpropagated reason clauses
   - existing variables in the queue:
     - unassigned after backtracking, level >= next decision level, variable.level undefined or variable.level < level
     - reassigned with lower level, variable.level < level
@@ -92,15 +93,16 @@ control flow:
   > solve:
     > propagate
   > normalize(clause):
-    - skip
+    - skip -> next_clause
     - assign(level, literal)
     - reassign(level, variable)
     - exit(UNSAT)
     - backtrack(level), assign(level, literal)
     - analyze:
-      > reassign(level, variable)
-      > add(learnt):
+      - reassign(level, variable)
+      - add(learnt):
         > backtrack(level), assign(level, literal)
+      > -> next_variable
   > add(clause):
     - empty
       - exit(UNSAT)
@@ -109,13 +111,13 @@ control flow:
       - assign(level, literal)
       - reassign(level, variable)
     - more than two:
-      - skip
+      - skip -> next_clause
       - normalize(clause)
   > propagate:
     - get_next_variable
       - propagate_variable(level, variable)
         > watched_clauses: (loop)
-          - skip
+          - skip -> next_clause
           - normalize(clause):
             - continue
               - unfilter
@@ -143,7 +145,8 @@ clause state:
 (static)
 - T (a == 0)
 (propagating)
-- F: exit(UNSAT)
+- F (a == 0): exit(UNSAT)
+- F (a > 0): backtrack(a - 1), assign(0)
 - U: assign(0)
 - T (a > 0): reassign(0)
 

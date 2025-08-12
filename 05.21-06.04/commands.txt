@@ -27,3 +27,12 @@ git push origin upstream/main:main
 git push origin --delete origin/cadical-test
 (remove deleted remote branches)
 git remote prune origin
+
+
+(git renaming a branch)
+git branch -m new-branch-name
+(or another)
+git branch -m old-branch-name new-branch-name
+git push origin new-branch-name
+git push origin --delete old-branch-name
+git push --set-upstream origin new-branch-name

@@ -7,7 +7,13 @@
 ## 1. Clone cvc5 from development branch
 
 ```
-git clone --depth 1 --branch minisatup-ipasirup https://github.com/hchenqide/cvc5.git
+git clone --depth 1 --branch minisatup https://github.com/hchenqide/cvc5.git
+```
+
+Using the other branch for MiniSatUP with chronological backtracking:
+
+```
+git clone --depth 1 --branch minisatup-chrono https://github.com/hchenqide/cvc5.git
 ```
 
 ## 2. Configure and build cvc5

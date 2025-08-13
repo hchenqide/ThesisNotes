@@ -67,7 +67,6 @@ data structures:
       - filling reason clause can cause reassigning self or reassigning a variable as analyze level reason
       - adding learnt clause can cause unassigning and assigning self again
       - both lead to level unmatching after current normalization and break from current variable
-      - analysis is left to the variable at the analysis level to perfrom, after all propagations before this level, to avoid unpropagated reason clauses
   - existing variables in the queue:
     - unassigned after backtracking, level >= next decision level, variable.level undefined or variable.level < level
     - reassigned with lower level, variable.level < level

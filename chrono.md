@@ -135,6 +135,26 @@ control flow:
       > propagate
 
 
+sorting variants: (clause size >= 2)
+(not yet watched)
+- new clause before solving (root level T, F, others U)
+  > skip if there is T, filter F -> all U
+- new clause during solving (any level T, F, others U)
+  > skip if there is root level T, filter root level F
+  > UU, UT, TU, TT, TF (a <= b), FT (b <= a)
+  - FU, FT (b > a) swap -> UF, TF (a > b)
+  - UF, TF (a > b) find max level F from the second on
+  - FF find two T, U from the others, or find one T, U and max F, or two max F
+- lazy clause (one T, the others F)
+  > find the T, replace to front, find max level F from the second on
+- learnt clause after analysis (first max level F, all others F):
+  > find max level F the second on
+(watched)
+- finding another watching literal (first T, U, F, second F, others T, U, F)
+  > find T, U from the others and replace the second F
+  > find max level F the second on
+
+
 clause state:
 [length = 0]
 (propagating)

@@ -134,6 +134,10 @@ control flow:
       > assign(level, literal)
       > propagate
 
+- lazy reassignment: (keeping topological ordering for analysis without additional trails of levels)
+  - new assignment (no matter which actual level) pushed back to trail (ordering is correct) (unchanged)
+  - reassignment level stored as lazy level and reason updated, but propagation works on old level
+  - before unassigning at backtracking, if there's lazy level, it is applied and pushed back to trail
 
 sorting variants: (clause size >= 2)
 (not yet watched)
